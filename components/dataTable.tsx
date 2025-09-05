@@ -38,13 +38,15 @@ interface DataTableProps<TData, TValue> {
     data: TData[]
     showTotal?: boolean // Nueva prop opcional
     totalField?: string // Campo a sumar (por defecto 'amount')
+    headerActions?: React.ReactNode
 }
 
 export function DataTable<TData, TValue>({
     columns,
     data,
     showTotal = false,
-    totalField = "amount"
+    totalField = "amount",
+    headerActions
 }: DataTableProps<TData, TValue>) {
     const [sorting, setSorting] = React.useState<SortingState>([])
     const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>([])
@@ -79,7 +81,7 @@ export function DataTable<TData, TValue>({
     // Calcular total de los datos filtrados
     const calculateTotal = React.useMemo(() => {
         if (!showTotal) return 0
-        
+
         const filteredData = table.getFilteredRowModel().rows.map(row => row.original)
         return filteredData.reduce((sum, item: any) => {
             const value = item[totalField]
@@ -97,42 +99,50 @@ export function DataTable<TData, TValue>({
 
     return (
         <div>
-            <div className="flex gap-2.5 py-4">
-                <Input
-                    placeholder="Buscar..."
-                    value={globalFilter ?? ""}
-                    onChange={(event) => setGlobalFilter(event.target.value)}
-                    className="max-w-sm"
-                />
-                <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="">
-                            Columns
-                        </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                        {table
-                            .getAllColumns()
-                            .filter((column) => column.getCanHide())
-                            .map((column) => {
-                                return (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                )
-                            })}
-                    </DropdownMenuContent>
-                </DropdownMenu>
+            <div className="flex gap-2.5 py-4 justify-between">
+
+                <div className="flex flex-1 gap-2.5">
+
+                    <Input
+                        placeholder="Buscar..."
+                        value={globalFilter ?? ""}
+                        onChange={(event) => setGlobalFilter(event.target.value)}
+                        className="max-w-sm"
+                    />
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button variant="outline" className="">
+                                Columns
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                            {table
+                                .getAllColumns()
+                                .filter((column) => column.getCanHide())
+                                .map((column) => {
+                                    return (
+                                        <DropdownMenuCheckboxItem
+                                            key={column.id}
+                                            className="capitalize"
+                                            checked={column.getIsVisible()}
+                                            onCheckedChange={(value) =>
+                                                column.toggleVisibility(!!value)
+                                            }
+                                        >
+                                            {column.id}
+                                        </DropdownMenuCheckboxItem>
+                                    )
+                                })}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
+                {/* Prop para que el botón de agregar nuevo dato se alinee con los demás botones del header */}
+
+                {headerActions}
             </div>
 
-            <div className="overflow-hidden rounded-md border">
+            <div className="rounded-md border">
                 <Table>
                     <TableHeader className="bg-gray-100">
                         {table.getHeaderGroups().map((headerGroup) => (
@@ -184,9 +194,8 @@ export function DataTable<TData, TValue>({
                                 Total ({table.getFilteredRowModel().rows.length} registros):
                             </span>
                             <div className="flex gap-4">
-                                <span className={`font-bold text-lg ${
-                                    calculateTotal >= 0 ? "text-green-600" : "text-red-600"
-                                }`}>
+                                <span className={`font-bold text-lg ${calculateTotal >= 0 ? "text-green-600" : "text-red-600"
+                                    }`}>
                                     {calculateTotal >= 0 ? "+" : ""}{formatCurrency(calculateTotal)}
                                 </span>
                                 <div className="text-sm text-gray-500">

@@ -4,23 +4,22 @@
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"
 import { Button } from "../ui/button";
+
 export type User = {
     name: string;
     email: string;
     tel: string;
 };
 
-
 import {
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-export const userColumns: ColumnDef<User>[] = [
+// Función para crear las columnas con callbacks
+export const createUserColumns = (onEdit: (user: User) => void): ColumnDef<User>[] => [
     {
         accessorKey: "name",
         header: ({ column }) => {
@@ -34,33 +33,41 @@ export const userColumns: ColumnDef<User>[] = [
                 </Button>
             )
         },
-
-
     },
     {
-        accessorFn: (row) => row.name,
-        id: "user",
-        header: "User",
-        cell: ({ row }) => {
-            const user = row.original;
+        accessorKey: "email",
+        header: ({ column }) => {
             return (
-                <div className="flex flex-col">
-                    <span className="font-medium">{user.name}</span>
-                    <span className="text-sm text-muted-foreground">{user.email}</span>
-                </div>
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Email
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
             )
         },
     },
-
     {
         accessorKey: "tel",
-        header: "Teléfono",
+        header: ({ column }) => {
+            return (
+                <Button
+                    variant="ghost"
+                    onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+                >
+                    Phone
+                    <ArrowUpDown className="ml-2 h-4 w-4" />
+                </Button>
+            )
+        },
     },
     {
         id: "action",
         header: 'Action',
+        enableGlobalFilter: false,
         cell: ({ row }) => {
-            const payment = row.original
+            const user = row.original;
 
             return (
                 <DropdownMenu>
@@ -71,9 +78,9 @@ export const userColumns: ColumnDef<User>[] = [
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-
-
-                        <DropdownMenuItem>Edit</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => onEdit(user)}>
+                            Edit
+                        </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

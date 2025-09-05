@@ -1,8 +1,15 @@
-import '@/styles/globals.css';
-import type { AppProps } from 'next/app';
+// pages/_app.tsx
+import '../styles/globals.css'
+import type { AppProps } from 'next/app'
+import Sidebar from '@/components/ui/sidebar'
 
-const App = ({ Component, pageProps }: AppProps) => (
-  <Component {...pageProps} />
-);
-
-export default App;
+export default function MyApp({ Component, pageProps }: AppProps) {
+  return (
+    <div className="flex min-h-screen">
+      <Sidebar />
+      <main className="flex-1">
+        <Component {...pageProps} />
+      </main>
+    </div>
+  )
+}

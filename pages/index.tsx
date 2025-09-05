@@ -1,6 +1,8 @@
-import Sidebar from "@/components/ui/sidebar";
+
 import { ArrowRight, BarChart3, Users2, CircleDollarSign } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
+import router from "next/router";
 
 const Home = () => {
   const features = [
@@ -8,6 +10,7 @@ const Home = () => {
       title: "Sistema de gestión de ingresos y gastos",
       desc: "Registra, clasifica y concilia tus movimientos en segundos. Visión clara de flujo de caja para mantener un control preciso de todas las transacciones financieras de tu empresa.",
       icon: <CircleDollarSign className="w-7 h-7 text-emerald-600" aria-hidden />,
+      route: '/income',
       art: (
         <Image
           alt="Sistema de gestión financiera"
@@ -25,6 +28,7 @@ const Home = () => {
       title: "Gestión de usuarios",
       desc: "Roles, permisos y actividad. Control fino para tu equipo y auditoría simple. Administra el acceso de usuarios con diferentes niveles de permisos y mantén un registro detallado de todas las actividades.",
       icon: <Users2 className="w-7 h-7 text-blue-600" aria-hidden />,
+      route: '/users',
       art: (
         <Image
           alt="Gestión de usuarios y permisos"
@@ -42,8 +46,9 @@ const Home = () => {
       title: "Reportes",
       desc: "Dashboards y exportables. Indicadores clave listos para tomar decisiones. Visualiza datos importantes a través de gráficos interactivos y exporta reportes detallados en diferentes formatos.",
       icon: <BarChart3 className="w-7 h-7 text-purple-600" aria-hidden />,
+      route: '/reports',
       art: (
-         <Image
+        <Image
           alt="Reportes y análisis"
           width={400}
           height={240}
@@ -58,10 +63,8 @@ const Home = () => {
   ];
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <Sidebar />
-
-      <div className="flex-1 flex items-center justify-center p-8 py-12 overflow-auto">
+    <div className="min-h-screen bg-gray-50">
+      <div className="flex items-center justify-center p-8 py-12 min-h-screen">
         <div className="max-w-7xl w-full">
           <div className="grid gap-8 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3">
             {features.map((f) => (
@@ -82,16 +85,18 @@ const Home = () => {
                 {/* Imagen con overlay */}
                 <div className="relative mb-6 rounded-xl overflow-hidden shadow-sm cursor-pointer">
                   {f.art}
-                  
+
                   {/* Overlay oscuro sutil */}
                   <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button
-                      className="bg-white text-gray-900 px-6 py-3 rounded-lg shadow-lg inline-flex items-center gap-2 text-base font-medium hover:bg-gray-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
-                      aria-label={`Acceder a ${f.title}`}
-                    >
-                      Acceder
-                      <ArrowRight className="w-5 h-5" />
-                    </button>
+                    <Link href={f.route} passHref>
+                      <button
+                        className="bg-white text-gray-900 px-6 py-3 rounded-lg shadow-lg inline-flex items-center gap-2 text-base font-medium hover:bg-gray-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300"
+                        aria-label={`Acceder a ${f.title}`}
+                      >
+                        Acceder
+                        <ArrowRight className="w-5 h-5" />
+                      </button>
+                    </Link>
                   </div>
                 </div>
 

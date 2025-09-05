@@ -4,6 +4,7 @@ import { useState } from "react";
 import { LogOut, Menu, X, ChevronLeft, ChevronRight, CircleDollarSign, User2, ChartLine } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import router from "next/router";
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
@@ -33,14 +34,14 @@ export default function Sidebar() {
       >
         {/* Header con logo */}
         <div className="flex items-center justify-between mt-10 mb-12 h-20">
-          <div className="flex-1 flex justify-center items-center overflow-hidden">
+          <div className="flex-1 flex justify-center items-center overflow-hidden " onClick={() => router.push('/')}>
             {isOpen ? (
               <Image
                 width={200}
                 height={200}
                 alt="logo"
                 src="/images/logo.webp"
-                className="object-contain max-h-20 w-auto"
+                className="object-contain max-h-24 w-auto"
                 priority
               />
             ) : null}
