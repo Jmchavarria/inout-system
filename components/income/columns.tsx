@@ -1,14 +1,15 @@
 "use client"
 
 import { ColumnDef } from "@tanstack/react-table"
-import { Button } from "@/components/ui/button"
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"
 import {
+    Button, 
     DropdownMenu,
     DropdownMenuContent,
     DropdownMenuItem,
     DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
+} from "@/components/ui"
+
 
 export type Income = {
     id: string
@@ -51,7 +52,7 @@ export const columns: ColumnDef<Income>[] = [
         header: "Date",
     },
     {
-        accessorFn: (row) => `${row.user.name} ${row.user.email}`, 
+        accessorFn: (row) => `${row.user.name} ${row.user.email}`,
         id: "user",
         header: "User",
         cell: ({ row }) => {

@@ -3,11 +3,9 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+    Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Card, CardHeader, CardTitle, CardContent, Button, Input,
+    Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui";
 
 const userSchema = z.object({
     name: z
@@ -105,8 +103,8 @@ export default function UserEditForm({
                                         <FormLabel className="text-sm font-medium text-gray-700">
                                             Role
                                         </FormLabel>
-                                        <Select 
-                                            onValueChange={field.onChange} 
+                                        <Select
+                                            onValueChange={field.onChange}
                                             defaultValue={field.value}
                                             disabled={isLoading}
                                         >

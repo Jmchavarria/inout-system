@@ -3,10 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage, Button, Input } from "@/components/ui";
 
 const transactionSchema = z.object({
     concept: z
@@ -83,11 +80,11 @@ export default function NewTransactionForm({
                         New Transaction
                     </CardTitle>
                 </CardHeader>
-                
+
                 <CardContent className="px-8 pb-8">
                     <Form {...form}>
                         <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-                            
+
                             <FormField
                                 control={form.control}
                                 name="concept"

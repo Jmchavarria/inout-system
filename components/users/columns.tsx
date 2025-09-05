@@ -3,7 +3,7 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { ArrowUpDown, MoreHorizontal } from "lucide-react"
-import { Button } from "../ui/button";
+import { Button } from "../ui";
 
 export type User = {
     name: string;

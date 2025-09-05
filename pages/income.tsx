@@ -1,15 +1,20 @@
 import { useState } from "react";
-import Sidebar from "@/components/ui/sidebar";
 import { Plus } from "lucide-react";
-import { columns } from "@/components/income/columns";
 import { DataTable } from "@/components/dataTable";
-import { Button } from "@/components/ui/button";
-import NewTransactionForm from "@/components/income/newTransactionForm";
+import { NewTransactionForm, columns } from "@/components/income";
+import { Button, } from "@/components/ui";
+
+interface TransactionFormData {
+    concept: string;
+    amount: string; // Como string porque viene del formulario
+    date: string;
+}
+
 
 const IncomeAndExpenses = () => {
     const [showForm, setShowForm] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const [incomes, setIncomes] = useState([
         {
             id: "inc_001",
@@ -25,12 +30,11 @@ const IncomeAndExpenses = () => {
             date: "2025-08-29",
             user: { id: "u2", name: "Ana Gómez", email: "ana@example.com" },
         },
-        // ... resto de datos
     ]);
 
-    const handleNewTransaction = (data) => {
+    const handleNewTransaction = (data: TransactionFormData) => {
         setIsLoading(true);
-        
+
         // Simular llamada a API
         setTimeout(() => {
             const newTransaction = {
@@ -40,11 +44,11 @@ const IncomeAndExpenses = () => {
                 date: data.date,
                 user: { id: "u1", name: "Usuario Actual", email: "user@example.com" }, // Usuario actual
             };
-            
+
             setIncomes(prev => [newTransaction, ...prev]);
             setIsLoading(false);
             setShowForm(false);
-            
+
             console.log("Nueva transacción creada:", newTransaction);
         }, 1000);
     };
