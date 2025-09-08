@@ -1,9 +1,5 @@
-import { createAuthClient } from 'better-auth/client';
+import { createAuthClient } from 'better-auth/react';
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NODE_ENV === 'production' 
-    ? 'https://inout-system.vercel.app'
-    : 'http://localhost:3000',
+  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL,
 });
-
-export const { signIn, useSession, signOut } = authClient;
