@@ -1,20 +1,20 @@
-// /context/auth-context.tsx
 'use client';
-
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import {
+  signInWithGitHub as clientSignInWithGitHub,
+  signOut as clientSignOut,
+} from '@/lib/auth-client';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
-export type AuthUser =
-  | {
-    id: string;
-    name: string | null;
-    email: string | null;
-    image?: string | null;
-    role?: 'admin' | 'user';
-    tel?: string | null;
-  }
-  | null;
+export type AuthUser = {
+  id: string;
+  name: string | null;
+  email: string | null;
+  image?: string | null;
+  role?: 'admin' | 'user';
+  tel?: string | null;
+} | null;
 
 type SignInOptions = {
   callbackURL?: string;
@@ -61,24 +61,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
-  // ✅ Better Auth: /api/auth/sign-in/github
   const signInWithGitHub = async (opts?: SignInOptions) => {
-    const url = new URL('/api/auth/signin/github', window.location.origin);
-    if (opts?.callbackURL) url.searchParams.set('callbackURL', opts.callbackURL);
-    if (opts?.newUserCallbackURL) url.searchParams.set('newUserCallbackURL', opts.newUserCallbackURL);
-    window.location.assign(url.toString());
+    await clientSignInWithGitHub({
+      callbackURL: opts?.callbackURL ?? '/',
+      newUserCallbackURL: opts?.newUserCallbackURL ?? '/welcome',
+    });
   };
 
-  // ✅ Better Auth: /api/auth/sign-out
   const signOut = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' });
-    } catch {
-      // ignore network errors
+      await clientSignOut();
     } finally {
       setUser(null);
       setStatus('unauthenticated');
-      window.location.replace('/auth/login');
+      window.location.href = '/auth/login';
     }
   };
 

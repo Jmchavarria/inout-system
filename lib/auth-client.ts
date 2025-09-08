@@ -1,13 +1,23 @@
-// lib/auth-client.ts
-'use client';
+// /lib/auth-client.ts
+import { createAuthClient } from 'better-auth/client';
 
-import { createAuthClient } from 'better-auth/react';
+export const authClient = createAuthClient({
+  // Con Pages Router el handler vive en /api/auth → baseURL relativo
+  baseURL: '/api/auth',
+});
 
-// Si tu API de auth vive en este mismo Next.js, NO necesitas baseURL.
-// Better Auth usará /api/auth/... en relativo automáticamente.
-export const authClient = createAuthClient();
+// Helpers cómodos:
+export const { useSession } = authClient;
 
-export const { signIn, signOut, useSession } = authClient;
+export const signOut = async () => authClient.signOut();
 
-// (opcional) export default por si quieres importar el cliente entero
-export default authClient;
+export const signInWithGitHub = async (opts?: {
+  callbackURL?: string;
+  newUserCallbackURL?: string;
+}) => {
+  await authClient.signIn.social({
+    provider: 'github',
+    callbackURL: opts?.callbackURL,
+    newUserCallbackURL: opts?.newUserCallbackURL,
+  });
+};
