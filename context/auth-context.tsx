@@ -57,9 +57,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
-  // Implementación genérica por redirección (ajusta la ruta si tu backend usa otra)
+  // Cambiada la ruta para usar Better Auth
   const signInWithGitHub = async (opts?: SignInOptions) => {
-    const url = new URL('/api/auth/github', window.location.origin);
+    const url = new URL('/api/auth/signin/github', window.location.origin);
     if (opts?.callbackURL) url.searchParams.set('callbackURL', opts.callbackURL);
     if (opts?.newUserCallbackURL) {
       url.searchParams.set('newUserCallbackURL', opts.newUserCallbackURL);
@@ -67,10 +67,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     window.location.href = url.toString();
   };
 
-  // Cierre de sesión (ajusta a la ruta real de logout de tu backend si es distinta)
+  // Actualizada la ruta de logout para Better Auth
   const signOut = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' });
     } catch {
       // ignore
     } finally {
