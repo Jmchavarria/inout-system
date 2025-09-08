@@ -127,8 +127,11 @@ npm start
    - Importa el repositorio `inout-system`
 
 2. **Configurar Variables de Entorno:**
-   En el dashboard de Vercel, agrega:
-   ```env
+
+
+
+   ```
+
    GITHUB_CLIENT_SECRET=5e06cbd99760cf0c62dad0d4707c574fa19d0e52
    NEXT_PUBLIC_BETTER_AUTH_URL=https://inout-system.vercel.app
    DATABASE_URL=postgresql://postgres.rxrgwbrthqjhljsgrfua:UPDQeKklpmLjPWZH@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true
@@ -140,7 +143,7 @@ npm start
    
    ```
 
-3. **Configuración de Build:**
+4. **Configuración de Build:**
    ```json
    {
      "buildCommand": "npm run build",
