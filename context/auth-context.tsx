@@ -7,13 +7,13 @@ type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 export type AuthUser =
   | {
-      id: string;
-      name: string | null;
-      email: string | null;
-      image?: string | null;
-      role?: 'admin' | 'user';
-      tel?: string | null;
-    }
+    id: string;
+    name: string | null;
+    email: string | null;
+    image?: string | null;
+    role?: 'admin' | 'user';
+    tel?: string | null;
+  }
   | null;
 
 type SignInOptions = {
@@ -63,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ✅ Better Auth: /api/auth/sign-in/github
   const signInWithGitHub = async (opts?: SignInOptions) => {
-    const url = new URL('/api/auth/sign-in/github', window.location.origin);
+    const url = new URL('/api/auth/signin/github', window.location.origin);
     if (opts?.callbackURL) url.searchParams.set('callbackURL', opts.callbackURL);
     if (opts?.newUserCallbackURL) url.searchParams.set('newUserCallbackURL', opts.newUserCallbackURL);
     window.location.assign(url.toString());
@@ -72,7 +72,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ✅ Better Auth: /api/auth/sign-out
   const signOut = async () => {
     try {
-      await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' });
+      await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' });
     } catch {
       // ignore network errors
     } finally {
