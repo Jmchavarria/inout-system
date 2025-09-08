@@ -1,8 +1,9 @@
-// lib/auth-client.ts
-import { createAuthClient } from 'better-auth/client'; // o "better-auth/react"
+import { createAuthClient } from 'better-auth/client';
 
 export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_AUTH_URL || 'http://localhost:3000',
+  baseURL: process.env.NODE_ENV === 'production' 
+    ? 'https://inout-system.vercel.app'
+    : 'http://localhost:3000',
 });
 
 export const { signIn, useSession, signOut } = authClient;

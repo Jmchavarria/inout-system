@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export const auth = betterAuth({
+  baseURL: process.env.BETTER_AUTH_URL!, // ✅ Agregado
+  secret: process.env.BETTER_AUTH_SECRET!, // ✅ Agregado
   database: prismaAdapter(prisma, {
     provider: 'postgresql',
   }),
