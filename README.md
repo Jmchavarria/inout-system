@@ -65,14 +65,18 @@ npm install
    .env
    ```
 
-2. Configura las variables en el archivo `.env`:
-   ```env
- # Connect to Supabase via connection pooling
+## Configuración de variables de entorno
+
+Crea un archivo `.env` en la raíz del proyecto con el siguiente contenido:
+
+```env
+# Connect to Supabase via connection pooling
 DATABASE_URL="postgresql://postgres.rxrgwbrthqjhljsgrfua:UPDQeKklpmLjPWZH@aws-1-us-east-1.pooler.supabase.com:6543/postgres?pgbouncer=true"
 
 # Direct connection to the database. Used for migrations
 DIRECT_URL="postgresql://postgres.rxrgwbrthqjhljsgrfua:UPDQeKklpmLjPWZH@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
 
+# Supabase
 NEXT_PUBLIC_SUPABASE_URL=https://rxrgwbrthqjhljsgrfua.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4cmd3YnJ0aHFqaGxqc2dyZnVhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTcwOTIyOTksImV4cCI6MjA3MjY2ODI5OX0.xWgaej-YCN_uVD2ecIxiNgWbJeRx1f8P0u5C8IJOjv0
 
@@ -84,7 +88,7 @@ NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000/
 # GitHub OAuth
 GITHUB_CLIENT_ID="Ov23lirh2Us15QOFVZvL"
 GITHUB_CLIENT_SECRET="29a976b9faccc115354f984046da6d05b1d76dda"
-   ```
+
 
 ### 4. Configurar Base de Datos
 
