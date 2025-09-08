@@ -166,15 +166,12 @@ function normalizeIncome(row: any): IncomePayload {
     row?.description ??
     '';
 
-  // monto: intenta amount/value/total
-  const amountNum =
-    typeof row?.amount === 'number'
-      ? row.amount
-      : typeof row?.value === 'number'
-      ? row.value
-      : typeof row?.total === 'number'
-      ? row.total
-      : 0;
+  // monto: intenta amount/value/total y convierte a número
+  const amountNum = 
+    Number(row?.amount) ||
+    Number(row?.value) ||
+    Number(row?.total) ||
+    0;
 
   // fecha: intenta date/createdAt
   const rawDate = row?.date ?? row?.createdAt ?? new Date();
@@ -198,7 +195,6 @@ function normalizeIncome(row: any): IncomePayload {
     user,
   };
 }
-
 // ─────────────────────────────────────────────────────────────
 // Handler
 // ─────────────────────────────────────────────────────────────
