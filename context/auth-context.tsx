@@ -1,20 +1,21 @@
+// /context/auth-context.tsx
 'use client';
+
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import {
-  signInWithGitHub as clientSignInWithGitHub,
-  signOut as clientSignOut,
-} from '@/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
-export type AuthUser = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image?: string | null;
-  role?: 'admin' | 'user';
-  tel?: string | null;
-} | null;
+export type AuthUser =
+  | {
+      id: string;
+      name: string | null;
+      email: string | null;
+      image?: string | null;
+      role?: 'admin' | 'user';
+      tel?: string | null;
+    }
+  | null;
 
 type SignInOptions = {
   callbackURL?: string;
@@ -61,20 +62,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
+  // Usar Better Auth client correctamente
   const signInWithGitHub = async (opts?: SignInOptions) => {
-    await clientSignInWithGitHub({
-      callbackURL: opts?.callbackURL ?? '/',
-      newUserCallbackURL: opts?.newUserCallbackURL ?? '/welcome',
-    });
+    try {
+      await authClient.signIn.social({
+        provider: 'github',
+        callbackURL: opts?.callbackURL || '/',
+        newUserCallbackURL: opts?.newUserCallbackURL || '/welcome',
+      });
+    } catch (error) {
+      console.error('GitHub sign in failed:', error);
+      throw error;
+    }
   };
 
+  // Usar Better Auth client para signOut
   const signOut = async () => {
     try {
-      await clientSignOut();
+      await authClient.signOut();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+      // Continuar con la limpieza local aunque falle
     } finally {
       setUser(null);
       setStatus('unauthenticated');
-      window.location.href = '/auth/login';
+      window.location.replace('/auth/login');
     }
   };
 
