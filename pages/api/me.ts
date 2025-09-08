@@ -1,33 +1,41 @@
 // pages/api/me.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { requireRole } from '@/lib/rbac';
+import { auth } from '@/lib/auth';
 
 type Role = 'admin' | 'user';
-type OkResponse = { userId: string; role: Role };
-type ErrResponse = { error: 'unauthorized' | 'forbidden' };
-
-const getStatus = (err: unknown): 401 | 403 => {
-  if (err && typeof err === 'object') {
-    const obj = err as Record<string, unknown>;
-    const s = obj.status;
-    if (s === 403) return 403;
-    if (s === 401) return 401;
-  }
-  return 401; // por defecto tratamos como no autenticado
+type OkResponse = { 
+  userId: string; 
+  role: Role;
+  name?: string;
+  email?: string;
+  image?: string;
 };
+type ErrResponse = { error: 'unauthorized' | 'forbidden' };
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<OkResponse | ErrResponse>
 ) {
   try {
-    // Acepta admin y user para poder identificarte
-    const { userId, role } = await requireRole(req, ['admin', 'user']);
-    return res.status(200).json({ userId, role: role as Role });
-  } catch (err: unknown) {
-    const code = getStatus(err);
-    return res
-      .status(code)
-      .json({ error: code === 401 ? 'unauthorized' : 'forbidden' });
+    // Usar Better Auth para obtener la sesión completa
+    const session = await auth.api.getSession({
+      headers: req.headers as any,
+    });
+
+    if (!session) {
+      return res.status(401).json({ error: 'unauthorized' });
+    }
+
+    // Devolver información completa del usuario
+    return res.status(200).json({ 
+      userId: session.user.id,
+      role: (session.user as any).role || 'user', // Ajusta según tu esquema
+      name: session.user.name,
+      email: session.user.email,
+      image: session.user.image || '',
+    });
+  } catch (err) {
+    console.error('Error getting session:', err);
+    return res.status(401).json({ error: 'unauthorized' });
   }
 }

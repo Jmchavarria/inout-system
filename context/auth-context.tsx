@@ -36,34 +36,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser>(null);
   const [status, setStatus] = useState<AuthStatus>('loading');
 
-  const fetchMe = async () => {
-    try {
-      setStatus('loading');
-      const res = await fetch('/api/me', { credentials: 'include' });
-      if (!res.ok) {
-        setUser(null);
-        setStatus('unauthenticated');
-        return;
-      }
-
-      // Cambiar esta línea:
-      const data = (await res.json()) as { userId: string; role: string };
-
-      // Y crear el objeto user correctamente:
-      const user: AuthUser = {
-        id: data.userId,
-        name: null, // Better Auth debería tener más info
-        email: null,
-        role: data.role as 'admin' | 'user',
-      };
-
-      setUser(user);
-      setStatus('authenticated');
-    } catch {
+ const fetchMe = async () => {
+  try {
+    setStatus('loading');
+    const res = await fetch('/api/me', { credentials: 'include' });
+    if (!res.ok) {
       setUser(null);
       setStatus('unauthenticated');
+      return;
     }
-  };
+    
+    const data = (await res.json()) as { 
+      userId: string; 
+      role: string;
+      name?: string;
+      email?: string;
+      image?: string;
+    };
+    
+    const user: AuthUser = {
+      id: data.userId,
+      name: data.name || null,
+      email: data.email || null,
+      image: data.image || null,
+      role: data.role as 'admin' | 'user',
+    };
+    
+    setUser(user);
+    setStatus('authenticated');
+  } catch {
+    setUser(null);
+    setStatus('unauthenticated');
+  }
+};
 
   useEffect(() => {
     void fetchMe();
