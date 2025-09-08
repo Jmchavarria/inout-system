@@ -1,7 +1,13 @@
-import { createAuthClient } from 'better-auth/client';
+// lib/auth-client.ts
+'use client';
 
-export const authClient = createAuthClient({
-  baseURL: process.env.NEXT_PUBLIC_BETTER_AUTH_URL || 'http://localhost:3000',
-});
+import { createAuthClient } from 'better-auth/react';
 
-export const { signIn, useSession, signOut } = authClient;
+// Si tu API de auth vive en este mismo Next.js, NO necesitas baseURL.
+// Better Auth usará /api/auth/... en relativo automáticamente.
+export const authClient = createAuthClient();
+
+export const { signIn, signOut, useSession } = authClient;
+
+// (opcional) export default por si quieres importar el cliente entero
+export default authClient;

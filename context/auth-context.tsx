@@ -1,16 +1,20 @@
 // /context/auth-context.tsx
+'use client';
+
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 
 type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
-export type AuthUser = {
-  id: string;
-  name: string | null;
-  email: string | null;
-  image?: string | null;
-  role?: 'admin' | 'user';
-  tel?: string | null;
-} | null;
+export type AuthUser =
+  | {
+      id: string;
+      name: string | null;
+      email: string | null;
+      image?: string | null;
+      role?: 'admin' | 'user';
+      tel?: string | null;
+    }
+  | null;
 
 type SignInOptions = {
   callbackURL?: string;
@@ -57,26 +61,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetchMe();
   };
 
-  // Cambiada la ruta para usar Better Auth
+  // ✅ Better Auth: /api/auth/sign-in/github
   const signInWithGitHub = async (opts?: SignInOptions) => {
-    const url = new URL('/api/auth/signin/github', window.location.origin);
+    const url = new URL('/api/auth/sign-in/github', window.location.origin);
     if (opts?.callbackURL) url.searchParams.set('callbackURL', opts.callbackURL);
-    if (opts?.newUserCallbackURL) {
-      url.searchParams.set('newUserCallbackURL', opts.newUserCallbackURL);
-    }
-    window.location.href = url.toString();
+    if (opts?.newUserCallbackURL) url.searchParams.set('newUserCallbackURL', opts.newUserCallbackURL);
+    window.location.assign(url.toString());
   };
 
-  // Actualizada la ruta de logout para Better Auth
+  // ✅ Better Auth: /api/auth/sign-out
   const signOut = async () => {
     try {
-      await fetch('/api/auth/signout', { method: 'POST', credentials: 'include' });
+      await fetch('/api/auth/sign-out', { method: 'POST', credentials: 'include' });
     } catch {
-      // ignore
+      // ignore network errors
     } finally {
       setUser(null);
       setStatus('unauthenticated');
-      window.location.href = '/auth/login';
+      window.location.replace('/auth/login');
     }
   };
 
@@ -90,8 +92,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within <AuthProvider />');
-  }
+  if (!ctx) throw new Error('useAuth must be used within <AuthProvider />');
   return ctx;
 }
