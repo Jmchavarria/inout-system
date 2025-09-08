@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { useAuth } from './context/auth-context';
+import { useAuth } from '../context/auth-context';
 import {
   Card,
   CardHeader,

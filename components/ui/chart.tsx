@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as RechartsPrimitive from 'recharts';
+import type { Payload as LegendPayload } from 'recharts/types/component/DefaultLegendContent';
 
 import { cn } from '@/lib/utils';
 
@@ -24,11 +25,9 @@ const ChartContext = React.createContext<ChartContextProps | null>(null);
 
 function useChart() {
   const context = React.useContext(ChartContext);
-
   if (!context) {
     throw new Error('useChart must be used within a <ChartContainer />');
   }
-
   return context;
 }
 
@@ -70,9 +69,7 @@ const ChartStyle = ({ id, config }: { id: string; config: ChartConfig }) => {
     ([, config]) => config.theme || config.color
   );
 
-  if (!colorConfig.length) {
-    return null;
-  }
+  if (!colorConfig.length) return null;
 
   return (
     <style
@@ -100,7 +97,7 @@ ${colorConfig
 
 const ChartTooltip = RechartsPrimitive.Tooltip;
 
-// ── Helpers para reducir complejidad ─────────────────────────
+// ── Helpers ─────────────────────────────────────────────────
 const toNode = (v: unknown): React.ReactNode =>
   v === null || v === undefined
     ? null
@@ -263,7 +260,7 @@ const defaultItemContent = (
   </>
 );
 
-// Helper function to render tooltip item - extracted to reduce complexity
+// Helper function to render tooltip item
 function renderTooltipItem(
   item: Record<string, unknown>,
   index: number,
@@ -288,7 +285,6 @@ function renderTooltipItem(
   const itemConfig = getPayloadConfigFromPayload(config, item, key);
   const indicatorColor = getIndicatorColor(item, color);
 
-  // Early return si hay formatter válido
   if (formatter && 'value' in item && 'name' in item) {
     const content = formatter(
       (item as { value?: unknown }).value,
@@ -304,7 +300,6 @@ function renderTooltipItem(
     );
   }
 
-  // Contenido por defecto
   const content = defaultItemContent(
     itemConfig,
     hideIndicator,
@@ -318,7 +313,7 @@ function renderTooltipItem(
   return wrapTooltipItem((item.dataKey as string) ?? index, indicator, content);
 }
 
-// Helper function to render indicator - extracted for clarity
+// Helper function to render indicator
 function renderIndicator(
   itemConfig: { icon?: React.ComponentType } | undefined,
   hideIndicator: boolean,
@@ -326,13 +321,8 @@ function renderIndicator(
   indicatorColor: unknown,
   nestLabel: boolean
 ): React.ReactNode {
-  if (itemConfig?.icon) {
-    return <itemConfig.icon />;
-  }
-
-  if (hideIndicator) {
-    return null;
-  }
+  if (itemConfig?.icon) return <itemConfig.icon />;
+  if (hideIndicator) return null;
 
   return (
     <div
@@ -387,19 +377,59 @@ const ChartTooltipContent = React.forwardRef<
   ) => {
     const { config } = useChart();
 
+    // Adaptador para labelFormatter de Recharts
+    const normalizedLabelFormatter = React.useMemo<
+      ((value: unknown, payload: unknown[]) => React.ReactNode) | undefined
+    >(() => {
+      if (!labelFormatter) return undefined;
+      return (value, payloadArr) =>
+        (labelFormatter as (label: any, payload: any[]) => React.ReactNode)(
+          value as any,
+          (payloadArr ?? []) as any[]
+        );
+    }, [labelFormatter]);
+
+    // Adaptador para formatter de Recharts
+    const normalizedFormatter = React.useMemo<
+      | ((
+          value: unknown,
+          name: unknown,
+          item: unknown,
+          index: number,
+          payload: unknown
+        ) => React.ReactNode)
+      | undefined
+    >(() => {
+      if (!formatter) return undefined;
+      return (value, name, item, index, payload) =>
+        (formatter as (
+          v: any,
+          n: any,
+          i: any,
+          idx: number,
+          p: any
+        ) => React.ReactNode)(
+          value as any,
+          name as any,
+          item as any,
+          index,
+          payload as any
+        );
+    }, [formatter]);
+
     const tooltipLabel = React.useMemo(() => {
       return getTooltipLabel(
         hideLabel,
         payload as unknown[],
         label,
-        labelFormatter,
+        normalizedLabelFormatter,
         labelClassName,
         config,
         labelKey
       );
     }, [
       label,
-      labelFormatter,
+      normalizedLabelFormatter,
       payload,
       hideLabel,
       labelClassName,
@@ -407,9 +437,7 @@ const ChartTooltipContent = React.forwardRef<
       labelKey,
     ]);
 
-    if (!active || !payload?.length) {
-      return null;
-    }
+    if (!active || !payload?.length) return null;
 
     const nestLabel = payload.length === 1 && indicator !== 'dot';
 
@@ -432,7 +460,7 @@ const ChartTooltipContent = React.forwardRef<
               hideIndicator,
               indicator,
               color,
-              formatter,
+              normalizedFormatter,
               nestLabel,
               tooltipLabel
             )
@@ -460,9 +488,7 @@ const ChartLegendContent = React.forwardRef<
   ) => {
     const { config } = useChart();
 
-    if (!payload?.length) {
-      return null;
-    }
+    if (!payload?.length) return null;
 
     return (
       <div
@@ -474,12 +500,13 @@ const ChartLegendContent = React.forwardRef<
         )}
       >
         {payload.map((item) => {
-          const key = `${nameKey || (item as Record<string, unknown>).dataKey || 'value'}`;
-          const itemConfig = getPayloadConfigFromPayload(config, item, key);
+          const lp = item as LegendPayload; // ✅ tipado correcto para Legend
+          const key = `${nameKey || lp.dataKey || 'value'}`;
+          const itemConfig = getPayloadConfigFromPayload(config, lp, key);
 
           return (
             <div
-              key={(item as Record<string, unknown>).value as string}
+              key={String(lp.value)}
               className={cn(
                 'flex items-center gap-1.5 [&>svg]:h-3 [&>svg]:w-3 [&>svg]:text-muted-foreground'
               )}
@@ -489,10 +516,7 @@ const ChartLegendContent = React.forwardRef<
               ) : (
                 <div
                   className='h-2 w-2 shrink-0 rounded-[2px]'
-                  style={{
-                    backgroundColor: (item as Record<string, unknown>)
-                      .color as string,
-                  }}
+                  style={{ backgroundColor: lp.color as string }}
                 />
               )}
               {itemConfig?.label}
@@ -505,24 +529,24 @@ const ChartLegendContent = React.forwardRef<
 );
 ChartLegendContent.displayName = 'ChartLegend';
 
-// Helper to extract item config from a payload - simplified for lower complexity
+// Helper to extract item config from a payload
 function getPayloadConfigFromPayload(
   config: ChartConfig,
   payload: unknown,
   key: string
 ): { label?: React.ReactNode; icon?: React.ComponentType } | undefined {
-  if (typeof payload !== 'object' || payload === null) {
-    return undefined;
-  }
+  if (typeof payload !== 'object' || payload === null) return undefined;
 
-  const configLabelKey = extractConfigLabelKey(payload, key);
+  const configLabelKey = extractConfigLabelKey(
+    payload as Record<string, unknown>,
+    key
+  );
 
   return configLabelKey in config
     ? config[configLabelKey]
     : config[key as keyof typeof config];
 }
 
-// Extracted helper to reduce complexity of getPayloadConfigFromPayload
 function extractConfigLabelKey(
   payload: Record<string, unknown>,
   key: string
@@ -544,16 +568,15 @@ function extractConfigLabelKey(
   return key;
 }
 
-// Extracted helper for getting nested payload
 function getPayloadPayload(
   payload: Record<string, unknown>
 ): Record<string, unknown> | undefined {
   if (
     'payload' in payload &&
-    typeof payload.payload === 'object' &&
-    payload.payload !== null
+    typeof (payload as any).payload === 'object' &&
+    (payload as any).payload !== null
   ) {
-    return payload.payload as Record<string, unknown>;
+    return (payload as any).payload as Record<string, unknown>;
   }
   return undefined;
 }

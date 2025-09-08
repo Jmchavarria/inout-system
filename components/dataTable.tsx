@@ -12,6 +12,7 @@ import {
   getFilteredRowModel,
   VisibilityState,
 } from '@tanstack/react-table';
+import type { Table as TanstackTable } from '@tanstack/react-table';
 
 import {
   Table,
@@ -51,7 +52,7 @@ const LoadingRow: React.FC<{ colSpan: number }> = ({ colSpan }) => (
   <TableRow>
     <TableCell colSpan={colSpan} className='h-24 text-center'>
       <div className='flex items-center justify-center gap-2'>
-        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600'></div>
+        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600' />
         Cargando...
       </div>
     </TableCell>
@@ -74,7 +75,7 @@ const FinancialSummary: React.FC<{
   formatCurrency: (amount: number) => string;
 }> = ({ calculateTotal, isLoading, formatCurrency }) => {
   if (isLoading) {
-    return <div className='animate-pulse bg-gray-200 h-6 w-24 rounded'></div>;
+    return <div className='animate-pulse bg-gray-200 h-6 w-24 rounded' />;
   }
 
   return (
@@ -113,22 +114,24 @@ const useFinancialCalculation = (
   }, [showFinancialSummary, isLoading, totalField, filteredRows]);
 };
 
-// Componente para el header con filtros - extraído para reducir complejidad
-interface TableHeaderFiltersProps {
+// ──────────────────────────────────────────────
+// Header con filtros (GENÉRICO EN TData)
+// ──────────────────────────────────────────────
+interface TableHeaderFiltersProps<TData> {
   globalFilter: string;
-  setGlobalFilter: (value: string) => void;
+  setGlobalFilter: (value: React.SetStateAction<string>) => void;
   isLoading: boolean;
-  table: ReturnType<typeof useReactTable>;
+  table: TanstackTable<TData>;
   headerActions?: React.ReactNode;
 }
 
-const TableHeaderFilters: React.FC<TableHeaderFiltersProps> = ({
+const TableHeaderFilters = <TData,>({
   globalFilter,
   setGlobalFilter,
   isLoading,
   table,
   headerActions,
-}) => (
+}: TableHeaderFiltersProps<TData>) => (
   <div className='flex gap-2.5 py-4 justify-between'>
     <div className='flex flex-1 gap-2.5'>
       <Input
@@ -165,7 +168,9 @@ const TableHeaderFilters: React.FC<TableHeaderFiltersProps> = ({
   </div>
 );
 
-// Componente para el footer con totales - extraído para reducir complejidad
+// ──────────────────────────────────────────────
+// Footer con totales
+// ──────────────────────────────────────────────
 interface TableFooterProps {
   showTotal: boolean;
   isLoading: boolean;
@@ -206,16 +211,18 @@ const TableFooter: React.FC<TableFooterProps> = ({
   );
 };
 
-// Componente para la paginación - extraído para reducir complejidad
-interface TablePaginationProps {
-  table: ReturnType<typeof useReactTable>;
+// ──────────────────────────────────────────────
+// Paginación (GENÉRICO EN TData)
+// ──────────────────────────────────────────────
+interface TablePaginationProps<TData> {
+  table: TanstackTable<TData>;
   isLoading: boolean;
 }
 
-const TablePagination: React.FC<TablePaginationProps> = ({
+const TablePagination = <TData,>({
   table,
   isLoading,
-}) => (
+}: TablePaginationProps<TData>) => (
   <div className='flex items-center justify-end gap-2 py-4 pr-6 md:pr-8'>
     <Button
       variant='outline'
@@ -327,7 +334,7 @@ export function DataTable<TData, TValue>({
   return (
     <div>
       {/* Header con filtros */}
-      <TableHeaderFilters
+      <TableHeaderFilters<TData>
         globalFilter={globalFilter}
         setGlobalFilter={setGlobalFilter}
         isLoading={isLoading}
@@ -368,7 +375,7 @@ export function DataTable<TData, TValue>({
         />
 
         {/* Paginación */}
-        <TablePagination table={table} isLoading={isLoading} />
+        <TablePagination<TData> table={table} isLoading={isLoading} />
       </div>
     </div>
   );

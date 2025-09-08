@@ -1,8 +1,8 @@
-// pages/auth/login.tsx
+// /pages/auth/login.tsx
 import React, { ReactElement, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useAuth } from '../context/auth-context';
+import { useAuth } from '../../context/auth-context'; // ← usa el contexto que expone signInWithGitHub
 
 const tips = [
   'Track every expense, no matter how small. The details build your real balance.',
@@ -13,7 +13,7 @@ const tips = [
 ];
 
 function LoginPage() {
-  const { signInWithGitHub } = useAuth(); // ✅ Tu desestructuración original
+  const { signInWithGitHub } = useAuth();
 
   const GitHubIcon = ({ className }: { className?: string }) => (
     <svg className={className} viewBox='0 0 24 24' fill='currentColor'>
@@ -25,7 +25,6 @@ function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Rotación de tips
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % tips.length);
@@ -33,24 +32,22 @@ function LoginPage() {
     return () => clearInterval(interval);
   }, []);
 
-  // 🔧 NUEVA función para manejar el loading
   const handleGitHubSignIn = async () => {
     setLoading(true);
     setError('');
-
     try {
       await signInWithGitHub({
         callbackURL: '/',
         newUserCallbackURL: '/welcome',
       });
-      // No hacemos setLoading(false) porque seguramente redirige
+      // redirige; no seteamos loading=false
     } catch (err: unknown) {
       const message =
         err instanceof Error
           ? err.message
           : typeof err === 'string'
-            ? err
-            : 'Something went wrong. Please try again.';
+          ? err
+          : 'Something went wrong. Please try again.';
       setError(message);
       setLoading(false);
     }
@@ -58,7 +55,6 @@ function LoginPage() {
 
   return (
     <div className='flex flex-col min-h-screen bg-gray-50'>
-      {/* Header con logo */}
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
         <Image
           src='/images/logo.webp'
@@ -69,9 +65,7 @@ function LoginPage() {
         />
       </div>
 
-      {/* Contenido dividido */}
       <div className='flex flex-1 bg-gray-50'>
-        {/* Columna izquierda */}
         <div className='flex flex-col justify-center px-6 md:px-20 bg-white w-full md:w-1/2 gap-6'>
           <h1 className='text-4xl md:text-5xl font-bold text-gray-600'>
             Welcome back <br />
@@ -79,48 +73,35 @@ function LoginPage() {
           </h1>
 
           <p className='text-gray-600'>
-            Log in to your account to manage your{' '}
-            <span className='font-semibold'>income</span> and{' '}
-            <span className='font-semibold'>expenses</span>, track your balance,
-            and keep control of your finances in one place.
+            Log in to your account to manage your <span className='font-semibold'>income</span> and{' '}
+            <span className='font-semibold'>expenses</span>, track your balance, and keep control of your finances in one place.
           </p>
 
           <div className='flex flex-col gap-4'>
-            {/* Mensaje de error */}
             {!!error && (
               <div className='p-4 bg-red-50 border border-red-200 rounded-xl'>
                 <p className='text-red-800 text-sm'>{error}</p>
               </div>
             )}
 
-            {/* 🔧 CAMBIO: onClick ahora usa handleGitHubSignIn */}
             <button
               onClick={handleGitHubSignIn}
               disabled={loading}
               className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
-                loading
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-black hover:bg-gray-800 text-white'
+                loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
               }`}
             >
-              {loading ? (
-                <Loader2 className='h-5 w-5 animate-spin' />
-              ) : (
-                <GitHubIcon className='h-5 w-5' />
-              )}
+              {loading ? <Loader2 className='h-5 w-5 animate-spin' /> : <GitHubIcon className='h-5 w-5' />}
               {loading ? 'Signing in...' : 'Continue with GitHub'}
             </button>
           </div>
 
           <p className='text-sm text-gray-600'>
-            By signing in, you agree to our terms of service. All new users are
-            automatically granted admin access for testing purposes.
+            By signing in, you agree to our terms of service. All new users are automatically granted admin access for testing purposes.
           </p>
         </div>
 
-        {/* Columna derecha */}
         <div className='relative hidden md:flex items-center justify-center w-1/2 bg-white'>
-          {/* Fondo con imagen */}
           <div className='absolute inset-0'>
             <Image
               src='/images/login.avif'
@@ -132,27 +113,18 @@ function LoginPage() {
             />
           </div>
 
-          {/* Overlay con consejo */}
           <div className='relative border shadow-2xl p-8 w-2/3 rounded-3xl text-center bg-white/90 backdrop-blur-lg'>
-            <h2 className='text-xl font-bold text-gray-800 mb-4'>
-              Financial Tip
-            </h2>
-            <p
-              key={currentTip}
-              className='text-gray-600 italic transition-all duration-700 ease-in-out'
-            >
+            <h2 className='text-xl font-bold text-gray-800 mb-4'>Financial Tip</h2>
+            <p key={currentTip} className='text-gray-600 italic transition-all duration-700 ease-in-out'>
               {tips[currentTip]}
             </p>
 
-            {/* Indicadores de progreso */}
             <div className='flex justify-center gap-1 mt-6'>
               {tips.map((_, index) => (
                 <div
                   key={index}
                   className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index === currentTip
-                      ? 'w-6 bg-gray-800'
-                      : 'w-1.5 bg-gray-300'
+                    index === currentTip ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-300'
                   }`}
                 />
               ))}
@@ -165,7 +137,7 @@ function LoginPage() {
 }
 
 LoginPage.getLayout = function getLayout(page: ReactElement) {
-  return page; // sin sidebar
+  return page;
 };
 
 export default LoginPage;

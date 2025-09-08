@@ -4,9 +4,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { createUserColumns, User, UserEditForm } from '@/components/users';
 import { DataTable } from '@/components/dataTable';
 
+type Role = 'admin' | 'user';
+
 interface UserFormData {
   name: string;
-  role?: string;
+  role?: Role;
   email?: string;
   tel?: string;
 }
@@ -14,6 +16,15 @@ interface UserFormData {
 interface ApiError {
   error?: string;
 }
+
+// ──────────────────────────────────────────────
+// Helpers de normalización
+// ──────────────────────────────────────────────
+const normalizeRole = (value: unknown): Role | undefined =>
+  value === 'admin' || value === 'user' ? value : undefined;
+
+const ensureRoleOrDefault = (value: unknown, fallback: Role = 'user'): Role =>
+  value === 'admin' || value === 'user' ? value : fallback;
 
 // Hook personalizado para manejar usuarios
 const useUsers = () => {
@@ -29,6 +40,7 @@ const useUsers = () => {
       const { items } = (await response.json()) as { items: User[] };
       setUsers(items);
     } catch (err) {
+      // eslint-disable-next-line no-console
       console.error('[getUsers] error:', err);
       alert('No se pudieron cargar los usuarios');
     } finally {
@@ -41,9 +53,11 @@ const useUsers = () => {
 
 // Función helper para crear usuario
 const createUser = async (data: UserFormData): Promise<User> => {
+  const role = ensureRoleOrDefault(data.role, 'user');
+
   const payload = {
     name: data.name.trim(),
-    role: (data.role ?? 'user').trim(),
+    role,
     email: `${data.name.toLowerCase().replace(/\s+/g, '.')}@example.com`,
     tel: '0000000000',
   };
@@ -55,7 +69,7 @@ const createUser = async (data: UserFormData): Promise<User> => {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}) as ApiError);
+    const errorData = (await response.json().catch(() => ({}))) as ApiError;
     throw new Error(errorData?.error || `HTTP ${response.status}`);
   }
 
@@ -67,9 +81,11 @@ const updateUser = async (
   userId: string,
   data: UserFormData
 ): Promise<User> => {
+  const role = ensureRoleOrDefault(data.role, 'user');
+
   const payload = {
     name: data.name.trim(),
-    role: (data.role ?? '').trim(),
+    role,
   };
 
   const response = await fetch(`/api/users/${userId}`, {
@@ -79,7 +95,7 @@ const updateUser = async (
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}) as ApiError);
+    const errorData = (await response.json().catch(() => ({}))) as ApiError;
     throw new Error(errorData?.error || `HTTP ${response.status}`);
   }
 
@@ -115,6 +131,7 @@ const useUserOperations = (
       const errorMessage =
         error instanceof Error ? error.message : 'No se pudo guardar';
 
+      // eslint-disable-next-line no-console
       console.error('[handleUser] error:', error);
       alert(errorMessage);
       return false;
@@ -135,7 +152,7 @@ export default function UsersPage(): JSX.Element {
 
   useEffect(() => {
     void loadUsers();
-  }, [loadUsers]); // ✅ Ahora loadUsers está en las dependencias
+  }, [loadUsers]);
 
   const handleUser = async (data: UserFormData): Promise<void> => {
     const success = await handleUserOperation(data, editingUser);
@@ -144,6 +161,14 @@ export default function UsersPage(): JSX.Element {
       setShowForm(false);
       setEditingUser(null);
     }
+  };
+
+  // ✳️ Adaptador para que coincida con la firma que espera UserEditForm
+  const handleUserSubmit = (data: { name: string; role: string }): void => {
+    void handleUser({
+      name: data.name,
+      role: normalizeRole(data.role),
+    });
   };
 
   const handleEdit = (user: User): void => {
@@ -175,20 +200,20 @@ export default function UsersPage(): JSX.Element {
 
         {showForm && (
           <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-            <UserEditForm
-              key={editingUser?.email ?? 'new'}
-              onSubmit={handleUser}
-              onCancel={handleCancel}
-              isLoading={isLoading}
-              editingUser={
-                editingUser
-                  ? {
-                      name: editingUser.name ?? '',
-                      role: editingUser.role ?? '',
-                    }
-                  : null
-              }
-            />
+          <UserEditForm
+  key={editingUser?.email ?? 'new'}
+  onSubmit={handleUserSubmit}
+  onCancel={handleCancel}
+  isLoading={isLoading}
+  editingUser={
+    editingUser
+      ? {
+          name: editingUser.name ?? '',
+          role: normalizeRole(editingUser.role),
+        }
+      : null
+  }
+/>
           </div>
         )}
       </div>

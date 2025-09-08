@@ -4,7 +4,7 @@ import type { NextPage } from 'next';
 import Link from 'next/link';
 import { ReactElement, ReactNode, useMemo } from 'react';
 import { Sidebar } from '@/components/ui';
-import { AuthProvider, useAuth } from './context/auth-context';
+import { AuthProvider, useAuth } from '../context/auth-context';
 import '@/styles/globals.css';
 import Image from 'next/image';
 
@@ -55,10 +55,7 @@ const getInitials = (user: AuthUser): string => {
 
 type AvatarVariant = 'loading' | 'image' | 'initials' | 'anon';
 
-const decideAvatarVariant = (
-  status: AuthStatus,
-  user: AuthUser
-): AvatarVariant => {
+const decideAvatarVariant = (status: AuthStatus, user: AuthUser): AvatarVariant => {
   return status === 'loading'
     ? 'loading'
     : user?.image
@@ -99,7 +96,7 @@ const getAvatarContent = (
   }
 };
 
-function AvatarCircle({
+const AvatarCircle = ({
   status,
   user,
   initials,
@@ -107,7 +104,7 @@ function AvatarCircle({
   status: AuthStatus;
   user: AuthUser;
   initials: string;
-}) {
+}) => {
   const variant = decideAvatarVariant(status, user);
   const content = getAvatarContent(variant, user, initials);
   const title = getTitle(user);
@@ -120,14 +117,13 @@ function AvatarCircle({
       {content}
     </div>
   );
-}
+};
 
 // ─────────────────────────────────────────────────────────────
 // Topbar con baja complejidad y sin `any`
 // ─────────────────────────────────────────────────────────────
-function Topbar() {
+const Topbar = () => {
   const { user, status } = useAuth() as UseAuthReturn;
-
   const initials = useMemo(() => getInitials(user), [user]);
 
   return (
@@ -137,9 +133,9 @@ function Topbar() {
       </Link>
     </div>
   );
-}
+};
 
-function AppLayout({ page }: { page: ReactElement }) {
+const AppLayout = ({ page }: { page: ReactElement }) => {
   return (
     <div className='flex'>
       <Sidebar />
@@ -149,13 +145,12 @@ function AppLayout({ page }: { page: ReactElement }) {
       </div>
     </div>
   );
-}
+};
 
-function MyApp({ Component, pageProps }: AppPropsWithLayout) {
-  const getLayout =
-    Component.getLayout ?? ((page) => <AppLayout page={page} />);
+const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
+  const getLayout = Component.getLayout ?? ((page) => <AppLayout page={page} />);
 
   return <AuthProvider>{getLayout(<Component {...pageProps} />)}</AuthProvider>;
-}
+};
 
 export default MyApp;

@@ -13,13 +13,10 @@ type ErrorKey =
 type ErrorResponse = { error: ErrorKey; message?: string };
 type GetResponse = { tel: string };
 type PostResponse = { ok: true; tel: string };
+type ApiResponse = GetResponse | PostResponse | ErrorResponse | void;
 
 const getErrorMessage = (err: unknown): string =>
-  err instanceof Error
-    ? err.message
-    : typeof err === 'string'
-      ? err
-      : 'Unknown';
+  err instanceof Error ? err.message : typeof err === 'string' ? err : 'Unknown';
 
 const SESSION_COOKIE_KEYS = [
   '__Secure-better-auth.session_token',
@@ -28,9 +25,7 @@ const SESSION_COOKIE_KEYS = [
   'session',
 ] as const;
 
-const tryGetSessionUserId = async (
-  cookieHeader?: string
-): Promise<string | undefined> => {
+const tryGetSessionUserId = async (cookieHeader?: string): Promise<string | undefined> => {
   try {
     const headers = new Headers();
     if (cookieHeader) headers.set('cookie', cookieHeader);
@@ -59,9 +54,7 @@ const getUserIdByToken = async (token: string): Promise<string | undefined> => {
   return row.userId;
 };
 
-async function getUserIdFromRequest(
-  req: NextApiRequest
-): Promise<string | undefined> {
+async function getUserIdFromRequest(req: NextApiRequest): Promise<string | undefined> {
   const cookieHeader = req.headers.cookie;
 
   const sessionId = await tryGetSessionUserId(cookieHeader);
@@ -73,61 +66,55 @@ async function getUserIdFromRequest(
   return getUserIdByToken(token);
 }
 
-const handleGetTel = async (
-  res: NextApiResponse<GetResponse | ErrorResponse>,
-  userId: string
-) => {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { tel: true },
-  });
-  return res.status(200).json({ tel: user?.tel ?? '' });
-};
-
-const handlePostTel = async (
-  req: NextApiRequest,
-  res: NextApiResponse<PostResponse | ErrorResponse>,
-  userId: string
-) => {
-  const { tel, userId: userIdFromClient } = (req.body ?? {}) as {
-    tel?: string;
-    userId?: string;
-  };
-
-  if (typeof tel !== 'string' || tel.trim() === '') {
-    return res.status(400).json({ error: 'tel requerido' });
-  }
-  if (userIdFromClient && userIdFromClient !== userId) {
-    return res.status(403).json({ error: 'forbidden_user_mismatch' });
-  }
-
-  await prisma.user.update({ where: { id: userId }, data: { tel } });
-  return res.status(200).json({ ok: true, tel });
-};
-
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<GetResponse | PostResponse | ErrorResponse>
-) {
+  res: NextApiResponse<ApiResponse>
+): Promise<void> {
   res.setHeader('Allow', 'GET, POST, OPTIONS');
-  if (req.method === 'OPTIONS') return res.status(204).end();
+  if (req.method === 'OPTIONS') {
+    res.status(204).end();
+    return;
+  }
 
   try {
     const userId = await getUserIdFromRequest(req);
-    if (!userId) return res.status(401).json({ error: 'No autenticado' });
-
-    switch (req.method) {
-      case 'GET':
-        return handleGetTel(res, userId);
-      case 'POST':
-        return handlePostTel(req, res, userId);
-      default:
-        return res.status(405).json({ error: 'method_not_allowed' });
+    if (!userId) {
+      res.status(401).json({ error: 'No autenticado' });
+      return;
     }
+
+    if (req.method === 'GET') {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { tel: true },
+      });
+      res.status(200).json({ tel: user?.tel ?? '' });
+      return;
+    }
+
+    if (req.method === 'POST') {
+      const { tel, userId: userIdFromClient } = (req.body ?? {}) as {
+        tel?: string;
+        userId?: string;
+      };
+
+      if (typeof tel !== 'string' || tel.trim() === '') {
+        res.status(400).json({ error: 'tel requerido' });
+        return;
+      }
+      if (userIdFromClient && userIdFromClient !== userId) {
+        res.status(403).json({ error: 'forbidden_user_mismatch' });
+        return;
+      }
+
+      await prisma.user.update({ where: { id: userId }, data: { tel } });
+      res.status(200).json({ ok: true, tel });
+      return;
+    }
+
+    res.status(405).json({ error: 'method_not_allowed' });
   } catch (err: unknown) {
     console.error('[/api/me/phone] ERROR:', err);
-    return res
-      .status(500)
-      .json({ error: 'internal_error', message: getErrorMessage(err) });
+    res.status(500).json({ error: 'internal_error', message: getErrorMessage(err) });
   }
 }

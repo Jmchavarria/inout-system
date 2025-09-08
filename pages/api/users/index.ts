@@ -31,19 +31,27 @@ type ErrorKey =
   | 'internal_error';
 type ErrorResponse = { error: ErrorKey; details?: unknown };
 
+// Normaliza cualquier valor a 'admin' | 'user'
+const toRole = (r: unknown): Role => {
+  if (r === 'admin' || r === 'user') return r;
+  const s = String(r ?? '').toLowerCase();
+  return s === 'admin' ? 'admin' : 'user';
+};
+
+// Prisma devuelve role como string; aquí lo normalizamos al DTO
 const toUserDTO = (u: {
   id: string;
   name: string | null;
   email: string | null;
   tel: string | null;
-  role: Role;
+  role: string; // ← importante: string de Prisma
   createdAt: Date;
 }): UserDTO => ({
   id: u.id,
   name: u.name,
   email: u.email,
   tel: u.tel,
-  role: u.role,
+  role: toRole(u.role),
   createdAt: u.createdAt.toISOString(),
 });
 
@@ -66,7 +74,7 @@ async function handleGet(
       name: true,
       email: true,
       tel: true,
-      role: true,
+      role: true, // Prisma: string
       createdAt: true,
     },
     orderBy: { createdAt: 'desc' },
@@ -88,6 +96,7 @@ async function handlePost(
   }
 
   const { name, role, email, tel } = parsed.data;
+
   const created = await prisma.user.create({
     data: { name, role, email: email ?? null, tel: tel ?? null },
     select: {
@@ -95,7 +104,7 @@ async function handlePost(
       name: true,
       email: true,
       tel: true,
-      role: true,
+      role: true, // Prisma: string
       createdAt: true,
     },
   });
@@ -121,8 +130,8 @@ export default async function handler(
       code === 401
         ? 'unauthorized'
         : code === 403
-          ? 'forbidden'
-          : 'internal_error';
+        ? 'forbidden'
+        : 'internal_error';
     return res.status(code).json({ error });
   }
 }

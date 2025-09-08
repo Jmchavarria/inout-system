@@ -9,7 +9,6 @@ const updateSchema = z.object({
   role: z.enum(['admin', 'user']),
 });
 
-// Helper: obtiene un HTTP status desde un error desconocido
 const getHttpStatus = (err: unknown): number => {
   if (err && typeof err === 'object') {
     const obj = err as Record<string, unknown>;
@@ -21,7 +20,6 @@ const getHttpStatus = (err: unknown): number => {
   return 500;
 };
 
-// (Opcional) tipa la respuesta de éxito/errores
 type UserPayload = {
   id: string;
   name: string | null;
@@ -30,28 +28,39 @@ type UserPayload = {
   role: 'admin' | 'user';
   createdAt: string;
 };
+
 type ErrorKey =
   | 'unauthorized'
   | 'forbidden'
   | 'invalid_body'
   | 'method_not_allowed'
   | 'internal_error';
+
 type ErrorResponse = { error: ErrorKey; details?: unknown };
+type ApiResponse = UserPayload | ErrorResponse | void;
+
+// Normaliza cualquier string a 'admin' | 'user'
+const toRole = (r: unknown): 'admin' | 'user' => {
+  if (r === 'admin' || r === 'user') return r;
+  const s = String(r ?? '').toLowerCase();
+  return s === 'admin' ? 'admin' : 'user';
+};
 
 export default async function handler(
   req: NextApiRequest,
-  res: NextApiResponse<UserPayload | ErrorResponse>
-) {
+  res: NextApiResponse<ApiResponse>
+): Promise<void> {
   try {
-    await requireRole(req, ['admin']); // 🔒 solo admins
+    await requireRole(req, ['admin']);
     const { id } = req.query as { id: string };
 
     if (req.method === 'PATCH') {
       const parsed = updateSchema.safeParse(req.body);
       if (!parsed.success) {
-        return res
+        res
           .status(400)
           .json({ error: 'invalid_body', details: parsed.error.flatten() });
+        return;
       }
 
       const updated = await prisma.user.update({
@@ -67,27 +76,35 @@ export default async function handler(
         },
       });
 
+      // Construimos explícitamente el payload para respetar el tipo estricto
       const payload: UserPayload = {
-        ...updated,
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        tel: updated.tel,
+        role: toRole(updated.role),
         createdAt: updated.createdAt.toISOString(),
       };
-      return res.status(200).json(payload);
+
+      res.status(200).json(payload);
+      return;
     }
 
     if (req.method === 'DELETE') {
       await prisma.user.delete({ where: { id } });
-      return res.status(204).end();
+      res.status(204).end();
+      return;
     }
 
-    return res.status(405).json({ error: 'method_not_allowed' });
+    res.status(405).json({ error: 'method_not_allowed' });
   } catch (err: unknown) {
     const code = getHttpStatus(err);
     const key: ErrorKey =
       code === 401
         ? 'unauthorized'
         : code === 403
-          ? 'forbidden'
-          : 'internal_error';
-    return res.status(code).json({ error: key });
+        ? 'forbidden'
+        : 'internal_error';
+    res.status(code).json({ error: key });
   }
 }
