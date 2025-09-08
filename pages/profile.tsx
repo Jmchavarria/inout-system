@@ -283,7 +283,7 @@ function AccountInfo({ user, copied, onCopy }: AccountInfoProps): JSX.Element {
   );
 }
 
-// Hook optimizado para manejar el rol y datos del usuario
+// Hook para obtener el rol desde la API
 function useUserRole(user: User | null) {
   const [role, setRole] = useState<Role | null>(null);
   const [userInfo, setUserInfo] = useState<Partial<User> | null>(null);
@@ -295,12 +295,16 @@ function useUserRole(user: User | null) {
       return;
     }
 
-    const ac = new AbortController();
+    let cancelled = false;
 
-    const loadUserData = async (): Promise<void> => {
+    const loadUserData = async () => {
       try {
+        if (cancelled) return;
         setLoadingRole(true);
-        const response = await fetch('/api/me', { signal: ac.signal });
+        
+        const response = await fetch('/api/me');
+
+        if (cancelled) return;
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
@@ -308,10 +312,9 @@ function useUserRole(user: User | null) {
 
         const data = (await response.json()) as ApiMeResponse;
         
-        // Actualizar el rol
-        setRole(data.role);
+        if (cancelled) return;
         
-        // Actualizar información adicional del usuario si está disponible
+        setRole(data.role);
         setUserInfo({
           name: data.name,
           email: data.email,
@@ -319,6 +322,8 @@ function useUserRole(user: User | null) {
         });
 
       } catch (error) {
+        if (cancelled) return;
+        
         console.warn('Error loading user data from API:', error);
         
         // Fallback al contexto de auth si está disponible
@@ -328,16 +333,16 @@ function useUserRole(user: User | null) {
           setRole(null);
         }
       } finally {
-        if (!ac.signal.aborted) {
+        if (!cancelled) {
           setLoadingRole(false);
         }
       }
     };
 
-    void loadUserData();
+    loadUserData();
     
     return () => {
-      ac.abort();
+      cancelled = true;
     };
   }, [user?.id, user?.role]);
 
@@ -376,38 +381,46 @@ function useUserPhone(user: User | null) {
       return;
     }
 
-    const ac = new AbortController();
+    let cancelled = false;
 
-    const loadPhone = async (): Promise<void> => {
+    const loadPhone = async () => {
       try {
+        if (cancelled) return;
         setLoadingPhone(true);
+        
         const response = await fetch('/api/me/phone', {
           method: 'GET',
-          signal: ac.signal,
         });
+
+        if (cancelled) return;
 
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
 
         const data = (await response.json()) as ApiPhoneResponse;
+        
+        if (cancelled) return;
+        
         setTel(String(data?.tel ?? ''));
         
       } catch (error) {
+        if (cancelled) return;
+        
         console.warn('Error loading phone:', error);
         // Fallback al contexto si está disponible
         setTel(String(user?.tel ?? ''));
       } finally {
-        if (!ac.signal.aborted) {
+        if (!cancelled) {
           setLoadingPhone(false);
         }
       }
     };
 
-    void loadPhone();
+    loadPhone();
     
     return () => {
-      ac.abort();
+      cancelled = true;
     };
   }, [user?.id, user?.tel]);
 
@@ -529,7 +542,7 @@ export default function Profile(): JSX.Element {
             {/* Layout horizontal */}
             <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
               {/* Izquierda: avatar + nombre + rol */}
-              <ProfileAvatar
+              <ProfileAvatar  
                 user={displayUser}
                 initials={initials}
                 resolvedRole={resolvedRole}

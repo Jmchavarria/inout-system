@@ -61,44 +61,51 @@ const prismaAny = prisma as any;
 
 /**
  * Intenta localizar un "delegate" compatible para ingresos.
- * Ajusta el orden de preferencia o fija uno concreto si conoces el nombre.
+ * 
+ * IMPORTANTE: Si conoces el nombre exacto de tu modelo, descomenta la línea
+ * correspondiente y elimina el resto para evitar errores.
  */
 function getIncomeDelegate() {
-  // 👇 Si sabes el nombre exacto, descomenta UNA de estas y borra el resto:
-  // return prismaAny.income;
-  // return prismaAny.incomes;
-
-  return (
-    prismaAny.income || // modelo "Income"
-    prismaAny.incomes || // modelo "Incomes"
-    prismaAny.Income || // por si alguien lo generó con mayúscula (no usual)
-    prismaAny.transaction || // apps que usan Transaction con tipo
-    prismaAny.movement || // apps que usan Movement/Record
-    null
-  );
+  return prismaAny.transaction; // ← USA TU MODELO REAL
 }
-
 /**
  * findMany con "fallbacks": intenta incluir usuario y ordenar por fecha;
  * si el esquema no lo soporta, va degradando hasta que funcione.
  */
 async function safeFindMany(delegate: any) {
-  // intento con include + orderBy date
+  console.log('🔍 [safeFindMany] Attempting to fetch income records...');
+
+  // Intento 1: con include + orderBy date
   try {
-    return await delegate.findMany({
+    const result = await delegate.findMany({
       orderBy: { date: 'desc' },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
-  } catch {
-    // intento sólo con orderBy date
-    try {
-      return await delegate.findMany({
-        orderBy: { date: 'desc' },
-      });
-    } catch {
-      // intento sin orderBy/include
-      return await delegate.findMany();
-    }
+    console.log('✅ [safeFindMany] Success with include + orderBy');
+    return result;
+  } catch (error) {
+    console.log('⚠️ [safeFindMany] Failed with include + orderBy, trying orderBy only');
+  }
+
+  // Intento 2: sólo con orderBy date
+  try {
+    const result = await delegate.findMany({
+      orderBy: { date: 'desc' },
+    });
+    console.log('✅ [safeFindMany] Success with orderBy only');
+    return result;
+  } catch (error) {
+    console.log('⚠️ [safeFindMany] Failed with orderBy, trying basic findMany');
+  }
+
+  // Intento 3: básico sin orderBy/include
+  try {
+    const result = await delegate.findMany();
+    console.log('✅ [safeFindMany] Success with basic findMany');
+    return result;
+  } catch (error) {
+    console.error('❌ [safeFindMany] All attempts failed:', error);
+    throw error;
   }
 }
 
@@ -112,46 +119,76 @@ async function safeCreate(delegate: any, data: {
   date?: string;
   userId?: string;
 }) {
-  // Construimos posibles shapes
+  console.log('🔍 [safeCreate] Attempting to create income record:', data);
+
+  // Construimos base
   const base = {
     concept: data.concept,
     amount: data.amount,
   } as any;
 
-  // fecha (si se puede)
+  // Agregar fecha si se proporciona
   if (data.date) {
     base.date = new Date(data.date);
   }
 
-  // intentamos con relación user.connect
+  // Intento 1: con relación user.connect
   if (data.userId) {
     try {
-      return await delegate.create({
+      const result = await delegate.create({
         data: { ...base, user: { connect: { id: data.userId } } },
         include: { user: { select: { id: true, name: true, email: true } } },
       });
-    } catch {
-      // intentamos con userId plano
-      try {
-        return await delegate.create({
-          data: { ...base, userId: data.userId },
-          include: { user: { select: { id: true, name: true, email: true } } },
-        });
-      } catch {
-        // intentamos sin include
-        return await delegate.create({ data: { ...base, userId: data.userId } });
-      }
+      console.log('✅ [safeCreate] Success with user.connect + include');
+      return result;
+    } catch (error) {
+      console.log('⚠️ [safeCreate] Failed with user.connect, trying userId field');
+    }
+
+    // Intento 2: con userId plano + include
+    try {
+      const result = await delegate.create({
+        data: { ...base, userId: data.userId },
+        include: { user: { select: { id: true, name: true, email: true } } },
+      });
+      console.log('✅ [safeCreate] Success with userId + include');
+      return result;
+    } catch (error) {
+      console.log('⚠️ [safeCreate] Failed with include, trying without include');
+    }
+
+    // Intento 3: con userId sin include
+    try {
+      const result = await delegate.create({
+        data: { ...base, userId: data.userId }
+      });
+      console.log('✅ [safeCreate] Success with userId only');
+      return result;
+    } catch (error) {
+      console.log('⚠️ [safeCreate] Failed with userId, trying without user reference');
     }
   }
 
-  // sin userId
+  // Intento 4: sin userId con include
   try {
-    return await delegate.create({
+    const result = await delegate.create({
       data: base,
       include: { user: { select: { id: true, name: true, email: true } } },
     });
-  } catch {
-    return await delegate.create({ data: base });
+    console.log('✅ [safeCreate] Success with include, no user');
+    return result;
+  } catch (error) {
+    console.log('⚠️ [safeCreate] Failed with include, trying basic create');
+  }
+
+  // Intento 5: básico sin include
+  try {
+    const result = await delegate.create({ data: base });
+    console.log('✅ [safeCreate] Success with basic create');
+    return result;
+  } catch (error) {
+    console.error('❌ [safeCreate] All create attempts failed:', error);
+    throw error;
   }
 }
 
@@ -159,32 +196,24 @@ async function safeCreate(delegate: any, data: {
  * Normaliza un registro cualquiera a IncomePayload.
  */
 function normalizeIncome(row: any): IncomePayload {
-  // concepto: intenta concept/title/description
-  const concept: string =
-    row?.concept ??
-    row?.title ??
-    row?.description ??
-    '';
+  // Concepto: Tu modelo Transaction usa 'concept'
+  const concept: string = String(row?.concept ?? '');
 
-  // monto: intenta amount/value/total y convierte a número
-  const amountNum = 
-    Number(row?.amount) ||
-    Number(row?.value) ||
-    Number(row?.total) ||
-    0;
+  // Monto: Tu modelo Transaction usa 'amount' (Decimal)
+  const amountNum = Number(row?.amount ?? 0);
 
-  // fecha: intenta date/createdAt
+  // Fecha: intenta date/createdAt
   const rawDate = row?.date ?? row?.createdAt ?? new Date();
   const date = toYMD(new Date(rawDate));
 
-  // usuario
+  // Usuario
   const user =
     row?.user && typeof row.user === 'object'
       ? {
-          id: String(row.user.id ?? ''),
-          name: row.user.name ?? null,
-          email: row.user.email ?? null,
-        }
+        id: String(row.user.id ?? ''),
+        name: row.user.name ?? null,
+        email: row.user.email ?? null,
+      }
       : null;
 
   return {
@@ -195,65 +224,78 @@ function normalizeIncome(row: any): IncomePayload {
     user,
   };
 }
+
 // ─────────────────────────────────────────────────────────────
-// Handler
+// Handler Principal
 // ─────────────────────────────────────────────────────────────
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ): Promise<void> {
   res.setHeader('Allow', 'GET, POST, OPTIONS');
+
   if (req.method === 'OPTIONS') {
     res.status(204).end();
     return;
   }
 
   try {
+    console.log(`🔍 [API /income] ${req.method} request received`);
+
+    // ✅ PERMITE ACCESO A ADMIN Y USER
     await requireRole(req, ['admin', 'user']);
+    console.log('✅ [API /income] Role check passed');
 
     const delegate = getIncomeDelegate();
     if (!delegate) {
-      // → Solución definitiva recomendada:
-      // Crea un modelo `Income` en schema.prisma y usa `prisma.income`.
+      console.error('❌ [API /income] No income model found');
       res.status(500).json({
         error: 'internal_error',
-        details:
-          'No se encontró un modelo de ingresos en Prisma Client. Define un modelo `Income` o ajusta getIncomeDelegate().',
+        details: 'No se encontró un modelo de ingresos en Prisma Client. Verifica tu schema.prisma y asegúrate de tener un modelo como Income, Transaction, etc.',
       });
       return;
     }
 
     if (req.method === 'GET') {
+      console.log('📋 [API /income] Processing GET request');
       const rows = await safeFindMany(delegate);
       const items = (rows as any[]).map(normalizeIncome);
+      console.log(`✅ [API /income] Returning ${items.length} items`);
       res.status(200).json({ items });
       return;
     }
 
     if (req.method === 'POST') {
+      console.log('📋 [API /income] Processing POST request');
       const parsed = createIncomeSchema.safeParse(req.body);
       if (!parsed.success) {
-        res
-          .status(400)
-          .json({ error: 'invalid_body', details: parsed.error.flatten() });
+        console.log('❌ [API /income] Invalid request body:', parsed.error);
+        res.status(400).json({
+          error: 'invalid_body',
+          details: parsed.error.flatten()
+        });
         return;
       }
 
       const created = await safeCreate(delegate, parsed.data);
       const payload = normalizeIncome(created);
+      console.log('✅ [API /income] Income created successfully');
       res.status(201).json(payload);
       return;
     }
 
     res.status(405).json({ error: 'method_not_allowed' });
+
   } catch (err: unknown) {
+    console.error('❌ [API /income] Error:', err);
     const code = getHttpStatus(err);
     const error: ErrorResponse['error'] =
       code === 401
         ? 'unauthorized'
         : code === 403
-        ? 'forbidden'
-        : 'internal_error';
-    res.status(code).json({ error });
+          ? 'forbidden'
+          : 'internal_error';
+
+    res.status(code).json({ error, details: err instanceof Error ? err.message : 'Unknown error' });
   }
 }
