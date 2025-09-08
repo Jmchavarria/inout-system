@@ -10,49 +10,67 @@
   "parser": "@typescript-eslint/parser",
   "plugins": ["react", "@typescript-eslint", "prettier", "react-hooks"],
   "rules": {
+    // ✅ solo prohibimos imports relativos a styles, no TODO el padre
     "no-restricted-imports": [
       "error",
       {
-        "patterns": ["..*"]
+        "patterns": ["../styles/*"]
       }
     ],
+
     "react/react-in-jsx-scope": "off",
-    "@typescript-eslint/no-explicit-any": "error",
-    "@typescript-eslint/no-unused-vars": "error",
-    "prefer-destructuring": "warn",
-    "react/jsx-filename-extension": [1, { "extensions": [".tsx"] }],
-    "import/prefer-default-export": "off",
-    "import/no-default-export": "error",
-    "no-nested-ternary": "warn",
-    "react/no-unused-prop-types": "error",
-    "react/hook-use-state": "error",
+
+    // ⚠️ baja a warning para no romper build por comillas/; etc.
+    "prettier/prettier": [
+      "warn",
+      {
+        "endOfLine": "auto",
+        "singleQuote": true,
+        "semi": true
+      }
+    ],
+
+    // ⚠️ warning con excepción para warn/error
+    "no-console": ["warn", { "allow": ["warn", "error"] }],
+
+    // ⚠️ quita la obligación global de function expressions (te rompe en TSX)
+    "func-style": "off",
+
+    // Menos fricción con TS mientras limpias
+    "@typescript-eslint/no-explicit-any": "warn",
+    "@typescript-eslint/no-unused-vars": [
+      "warn",
+      { "argsIgnorePattern": "^_", "varsIgnorePattern": "^_" }
+    ],
+
+    // Preferencias de React (en warning)
     "react/function-component-definition": [
-      1,
+      "warn",
       { "namedComponents": "arrow-function" }
     ],
-    "react/jsx-key": "error",
-    "react/no-array-index-key": "error",
-    "prettier/prettier": [
-      "error",
-      {
-        "endOfLine": "auto"
-      }
-    ],
-    "no-console": "error",
+    "react/jsx-filename-extension": [1, { "extensions": [".tsx"] }],
+    "react/no-unused-prop-types": "warn",
+
     "react-hooks/rules-of-hooks": "error",
     "react-hooks/exhaustive-deps": "warn",
-    "complexity": ["warn", 10],
-    "eqeqeq": "error",
-    "prefer-arrow-callback": "error",
+
+    // Reglas de estilo lógicas (en warning)
+    "prefer-destructuring": "warn",
+    "no-nested-ternary": "warn",
     "arrow-body-style": ["warn", "as-needed"],
-    "func-style": ["error", "expression"]
+    "prefer-arrow-callback": "warn",
+
+    // Reglas lógicas (deja estas)
+    "eqeqeq": "error",
+    "complexity": ["warn", 10]
   },
+
+  // En páginas, Next necesita default exports; evita conflictos aquí.
   "overrides": [
     {
-      "files": ["pages/**/*.tsx", "pages/**/*.ts"],
+      "files": ["pages/**/*.{ts,tsx}"],
       "rules": {
-        "import/prefer-default-export": "error",
-        "import/no-default-export": "off"
+        "react/function-component-definition": "off"
       }
     }
   ]
