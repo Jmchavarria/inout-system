@@ -8,13 +8,13 @@ type AuthStatus = 'loading' | 'authenticated' | 'unauthenticated';
 
 export type AuthUser =
   | {
-      id: string;
-      name: string | null;
-      email: string | null;
-      image?: string | null;
-      role?: 'admin' | 'user';
-      tel?: string | null;
-    }
+    id: string;
+    name: string | null;
+    email: string | null;
+    image?: string | null;
+    role?: 'admin' | 'user';
+    tel?: string | null;
+  }
   | null;
 
 type SignInOptions = {
@@ -45,9 +45,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setStatus('unauthenticated');
         return;
       }
-      const data = (await res.json()) as { user?: AuthUser };
-      setUser(data?.user ?? null);
-      setStatus(data?.user ? 'authenticated' : 'unauthenticated');
+
+      // Cambiar esta línea:
+      const data = (await res.json()) as { userId: string; role: string };
+
+      // Y crear el objeto user correctamente:
+      const user: AuthUser = {
+        id: data.userId,
+        name: null, // Better Auth debería tener más info
+        email: null,
+        role: data.role as 'admin' | 'user',
+      };
+
+      setUser(user);
+      setStatus('authenticated');
     } catch {
       setUser(null);
       setStatus('unauthenticated');
