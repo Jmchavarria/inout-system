@@ -21,7 +21,7 @@ export default async function handler(
     const session = await auth.api.getSession({
       headers: req.headers as any,
     });
-
+    
     if (!session) {
       return res.status(401).json({ error: 'unauthorized' });
     }

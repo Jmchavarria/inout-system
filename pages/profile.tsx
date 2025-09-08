@@ -38,9 +38,13 @@ interface AuthContext {
   signOut: (opts?: Record<string, unknown>) => Promise<void>;
 }
 
+// Actualizada para coincidir con tu API
 interface ApiMeResponse {
   userId: string;
   role: Role;
+  name?: string;
+  email?: string;
+  image?: string;
 }
 
 interface ApiPhoneResponse {
@@ -279,9 +283,10 @@ function AccountInfo({ user, copied, onCopy }: AccountInfoProps): JSX.Element {
   );
 }
 
-// Hook personalizado para manejar el rol
+// Hook optimizado para manejar el rol y datos del usuario
 function useUserRole(user: User | null) {
   const [role, setRole] = useState<Role | null>(null);
+  const [userInfo, setUserInfo] = useState<Partial<User> | null>(null);
   const [loadingRole, setLoadingRole] = useState(true);
 
   useEffect(() => {
@@ -292,19 +297,31 @@ function useUserRole(user: User | null) {
 
     const ac = new AbortController();
 
-    const loadRole = async (): Promise<void> => {
+    const loadUserData = async (): Promise<void> => {
       try {
         setLoadingRole(true);
-        const r = await fetch('/api/me', { signal: ac.signal });
+        const response = await fetch('/api/me', { signal: ac.signal });
 
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        const j = (await r.json()) as ApiMeResponse;
-        setRole(j.role);
-      } catch {
-        // Fallback si el contexto tuviera role
+        const data = (await response.json()) as ApiMeResponse;
+        
+        // Actualizar el rol
+        setRole(data.role);
+        
+        // Actualizar información adicional del usuario si está disponible
+        setUserInfo({
+          name: data.name,
+          email: data.email,
+          image: data.image,
+        });
+
+      } catch (error) {
+        console.warn('Error loading user data from API:', error);
+        
+        // Fallback al contexto de auth si está disponible
         if (user?.role === 'admin' || user?.role === 'user') {
           setRole(user.role as Role);
         } else {
@@ -317,17 +334,32 @@ function useUserRole(user: User | null) {
       }
     };
 
-    void loadRole();
+    void loadUserData();
+    
     return () => {
       ac.abort();
     };
   }, [user?.id, user?.role]);
 
+  // Resolver el rol final con fallback
   const resolvedRole: Role | null =
     role ??
     (user?.role === 'admin' || user?.role === 'user' ? user.role : null);
 
-  return { resolvedRole, loadingRole };
+  // Combinar información del usuario con los datos del API
+  const enrichedUser: User | null = user ? {
+    ...user,
+    name: userInfo?.name ?? user.name,
+    email: userInfo?.email ?? user.email,
+    image: userInfo?.image ?? user.image,
+    role: resolvedRole ?? user.role,
+  } : null;
+
+  return { 
+    resolvedRole, 
+    loadingRole, 
+    enrichedUser 
+  };
 }
 
 // Hook personalizado para manejar el teléfono
@@ -349,18 +381,21 @@ function useUserPhone(user: User | null) {
     const loadPhone = async (): Promise<void> => {
       try {
         setLoadingPhone(true);
-        const r = await fetch('/api/me/phone', {
+        const response = await fetch('/api/me/phone', {
           method: 'GET',
           signal: ac.signal,
         });
 
-        if (!r.ok) {
-          throw new Error(`HTTP ${r.status}`);
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
         }
 
-        const j = (await r.json()) as ApiPhoneResponse;
-        setTel(String(j?.tel ?? ''));
-      } catch {
+        const data = (await response.json()) as ApiPhoneResponse;
+        setTel(String(data?.tel ?? ''));
+        
+      } catch (error) {
+        console.warn('Error loading phone:', error);
+        // Fallback al contexto si está disponible
         setTel(String(user?.tel ?? ''));
       } finally {
         if (!ac.signal.aborted) {
@@ -370,6 +405,7 @@ function useUserPhone(user: User | null) {
     };
 
     void loadPhone();
+    
     return () => {
       ac.abort();
     };
@@ -388,21 +424,22 @@ function useUserPhone(user: User | null) {
         userId: user.id,
       };
 
-      const res = await fetch('/api/me/phone', {
+      const response = await fetch('/api/me/phone', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(requestBody),
       });
 
-      if (!res.ok) {
-        const j = (await res.json().catch(() => ({}))) as { error?: string };
-        throw new Error(j?.error || `HTTP ${res.status}`);
+      if (!response.ok) {
+        const errorData = (await response.json().catch(() => ({}))) as { error?: string };
+        throw new Error(errorData?.error || `HTTP ${response.status}`);
       }
 
       setMsg('Teléfono actualizado');
-    } catch (e: unknown) {
-      const error = e as { message?: string };
-      setErr(error?.message ?? 'No se pudo actualizar el teléfono');
+      
+    } catch (error: unknown) {
+      const err = error as { message?: string };
+      setErr(err?.message ?? 'No se pudo actualizar el teléfono');
     } finally {
       setSaving(false);
       setTimeout(() => setMsg(null), 2000);
@@ -430,8 +467,8 @@ function useCopyToClipboard() {
       await navigator.clipboard.writeText(text);
       setCopied(what);
       setTimeout(() => setCopied(null), 1200);
-    } catch (e) {
-      console.warn('Profile: operación omitida', e);
+    } catch (error) {
+      console.warn('Copy operation failed:', error);
     }
   };
 
@@ -441,16 +478,18 @@ function useCopyToClipboard() {
 export default function Profile(): JSX.Element {
   const { user, status } = useAuth() as AuthContext;
 
-  const { resolvedRole, loadingRole } = useUserRole(user);
-  const { tel, setTel, loadingPhone, saving, msg, err, savePhone } =
-    useUserPhone(user);
+  const { resolvedRole, loadingRole, enrichedUser } = useUserRole(user);
+  const { tel, setTel, loadingPhone, saving, msg, err, savePhone } = useUserPhone(user);
   const { copied, copy } = useCopyToClipboard();
 
-  const initials = useMemo(() => {
-    if (!user) return 'U';
+  // Usar el usuario enriquecido con datos del API
+  const displayUser = enrichedUser ?? user;
 
-    const n = String(user.name ?? user.email ?? user.id ?? '');
-    const parts = n.trim().split(/\s+/);
+  const initials = useMemo(() => {
+    if (!displayUser) return 'U';
+
+    const name = String(displayUser.name ?? displayUser.email ?? displayUser.id ?? '');
+    const parts = name.trim().split(/\s+/);
 
     if (!parts.length) return 'U';
 
@@ -458,11 +497,11 @@ export default function Profile(): JSX.Element {
     const second = parts[1]?.[0] ?? '';
 
     return (first + second).toUpperCase();
-  }, [user]);
+  }, [displayUser]);
 
   const handleCopy = (what: 'id' | 'email'): void => {
-    if (user) {
-      void copy(what, user);
+    if (displayUser) {
+      void copy(what, displayUser);
     }
   };
 
@@ -474,7 +513,7 @@ export default function Profile(): JSX.Element {
     return <ProfileLoading />;
   }
 
-  if (!user) {
+  if (!displayUser) {
     return <NoUserProfile />;
   }
 
@@ -491,7 +530,7 @@ export default function Profile(): JSX.Element {
             <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
               {/* Izquierda: avatar + nombre + rol */}
               <ProfileAvatar
-                user={user}
+                user={displayUser}
                 initials={initials}
                 resolvedRole={resolvedRole}
                 loadingRole={loadingRole}
@@ -499,7 +538,7 @@ export default function Profile(): JSX.Element {
 
               {/* Centro: contacto */}
               <ContactInfo
-                user={user}
+                user={displayUser}
                 tel={tel}
                 setTel={setTel}
                 loadingPhone={loadingPhone}
@@ -512,7 +551,7 @@ export default function Profile(): JSX.Element {
               />
 
               {/* Derecha: cuenta */}
-              <AccountInfo user={user} copied={copied} onCopy={handleCopy} />
+              <AccountInfo user={displayUser} copied={copied} onCopy={handleCopy} />
             </div>
 
             {/* Debug */}
@@ -521,7 +560,12 @@ export default function Profile(): JSX.Element {
                 For devs
               </summary>
               <pre className='mt-3 max-h-72 overflow-auto rounded bg-gray-50 p-3 text-xs'>
-                {JSON.stringify(user, null, 2)}
+                {JSON.stringify({
+                  originalUser: user,
+                  enrichedUser: displayUser,
+                  resolvedRole,
+                  loadingRole
+                }, null, 2)}
               </pre>
             </details>
           </CardContent>
