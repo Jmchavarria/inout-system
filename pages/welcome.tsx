@@ -1,17 +1,16 @@
 // pages/welcome.tsx
 import { FormEvent, ReactElement, useState } from 'react';
 import { Phone, Shield, Heart, CheckCircle } from 'lucide-react';
-import { useStore } from '@nanostores/react';
-import { useSession } from '@/lib/auth-client';
+import { authClient } from '@/lib/auth-client';
 
-export default function Welcome() {
-  const { data, isPending } = useStore(useSession); // <-- sesión (nanostores)
+export default function Welcome(): JSX.Element {
+  const { data, isPending } = authClient.useSession(); // ✅ Corregido
   const userId = data?.user?.id ?? null;
 
   const [tel, setTel] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const onSubmit = async (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent): Promise<void> => {
     e.preventDefault();
     setIsLoading(true);
 
@@ -24,7 +23,7 @@ export default function Welcome() {
       });
 
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
+        const body = await res.json().catch(() => ({})) as { error?: string };
         alert(
           `No se pudo guardar el teléfono: ${body?.error || res.statusText}`
         );
@@ -38,6 +37,10 @@ export default function Welcome() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSkip = (): void => {
+    window.location.href = '/dashboard';
   };
 
   if (isPending) {
@@ -137,7 +140,7 @@ export default function Welcome() {
 
         <div className='text-center mt-6'>
           <button
-            onClick={() => (window.location.href = '/dashboard')}
+            onClick={handleSkip}
             className='text-sm text-gray-500 hover:text-gray-700 transition-colors'
           >
             Skip for now
