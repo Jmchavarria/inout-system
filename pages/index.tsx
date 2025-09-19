@@ -66,8 +66,8 @@ const Home = () => {
   ];
 
   return (
-    <div className='min-h-screen bg-gray-50'>
-      <div className='flex items-center justify-center p-8 py-12 min-h-screen'>
+    <div className='bg-gray-50'>
+      <div className='flex items-center justify-center   border-black'>
         <div className='max-w-7xl w-full'>
           <div className='grid gap-8 sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'>
             {features.map((f) => (

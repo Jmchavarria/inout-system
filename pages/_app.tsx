@@ -127,7 +127,7 @@ const Topbar = () => {
   const initials = useMemo(() => getInitials(user), [user]);
 
   return (
-    <div className='h-12 border-b bg-white/80 backdrop-blur flex items-center justify-end px-4'>
+    <div className='h-12 mb-2 flex items-center justify-end px-4 flex-shrink-0'>
       <Link href='/profile' aria-label='Go to profile' className='inline-flex'>
         <AvatarCircle status={status} user={user} initials={initials} />
       </Link>
@@ -137,18 +137,20 @@ const Topbar = () => {
 
 const AppLayout = ({ page }: { page: ReactElement }) => {
   return (
-    <div className='flex'>
+    <div className='flex h-screen overflow-hidden'>
       <Sidebar />
-      <div className='flex-1 flex flex-col '>
+        <main className='flex-1 overflow-y-auto bg-gray-50 px-4 py-2'>
         <Topbar />
-        <main className='flex-1'>{page}</main>
-      </div>
+          <div className='max-w-7xl mx-auto'>
+            {page}
+          </div>
+        </main>
     </div>
   );
 };
-
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout ?? ((page) => <AppLayout page={page} />);
+
 
   return <AuthProvider>{getLayout(<Component {...pageProps} />)}</AuthProvider>;
 };

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { useAuth } from '../context/auth-context';
 import {
   Card,
@@ -38,7 +38,6 @@ interface AuthContext {
   signOut: (opts?: Record<string, unknown>) => Promise<void>;
 }
 
-// Actualizada para coincidir con tu API
 interface ApiMeResponse {
   userId: string;
   role: Role;
@@ -56,22 +55,127 @@ interface PhoneUpdateRequest {
   userId: string;
 }
 
+// Cache simple en memoria para evitar consultas repetidas
+const userDataCache = new Map<string, {
+  data: ApiMeResponse;
+  timestamp: number;
+}>();
+
+const phoneDataCache = new Map<string, {
+  data: ApiPhoneResponse;
+  timestamp: number;
+}>();
+
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 // Componente de loading
 function ProfileLoading(): JSX.Element {
   return (
-    <div className='min-h-screen flex items-center justify-center px-4'>
+    <div className=' flex items-center justify-center px-4 py-8'>
       <div className='w-full max-w-4xl'>
-        <Card>
-          <CardHeader>
-            <CardTitle>My profile</CardTitle>
+        <Card className='shadow-lg'>
+          <CardHeader className='pb-6 flex justify-center items-center'>
+            {/* <CardTitle className='text-center text-2xl'>My profile</CardTitle> */}
+            <h1 className='w-28 h-8 bg-gray-300 animate-pulse rounded' />
           </CardHeader>
-          <CardContent>
-            <div className='flex items-center gap-6'>
-              <div className='h-20 w-20 rounded-full bg-gray-200 animate-pulse' />
-              <div className='flex-1 space-y-3'>
-                <div className='h-6 w-48 bg-gray-200 rounded animate-pulse' />
-                <div className='h-4 w-64 bg-gray-200 rounded animate-pulse' />
-                <div className='h-4 w-56 bg-gray-200 rounded animate-pulse' />
+
+          <CardContent className='space-y-8'>
+            <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
+              <div className='flex flex-col items-center space-y-4'>
+                <div className='relative h-24 w-24 shrink-0 rounded-full  bg-gray-100 ring-2 ring-gray-200 flex items-center justify-center text-2xl font-semibold text-gray-600 overflow-hidden animate-pulse'>
+
+                  {/* Avatar */}
+                  <div className="flex items-center justify-center w-full h-full bg-gray-300 rounded-sm sm:w-96 dark:bg-gray-700">
+                    <svg className="w-10 h-10 text-gray-200 dark:text-gray-600" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 20 18">
+                      <path d="M18 0H2a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V2a2 2 0 0 0-2-2Zm-5.5 4a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm4.376 10.481A1 1 0 0 1 16 15H4a1 1 0 0 1-.895-1.447l3.5-7A1 1 0 0 1 7.468 6a.965.965 0 0 1 .9.5l2.775 4.757 1.546-1.887a1 1 0 0 1 1.618.1l2.541 4a1 1 0 0 1 .028 1.011Z" />
+                    </svg>
+                  </div>
+                </div>
+
+                <div className='text-center space-y-2'>
+                  <h2 className="h-6 w-40 bg-gray-300 rounded animate-pulse" />
+
+                  <span
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-sm `}
+                  >
+                    <div className='h-4 w-4 bg-gray-300 animate-pulse rounded' />
+                    <span className="h-4 w-10 bg-gray-300 rounded animate-pulse" />
+                  </span>
+                </div>
+              </div>
+
+
+              {/* Información de contacto */}
+              <div className='space-y-6'>
+                <div className='space-y-4'>
+                  {/* Titulo: Contact Information  */}
+                  <h3 className='text-lg font-semibold bg-gray-300 rounded w-44 h-8 animate-pulse'>
+                  </h3>
+
+                  <div className='space-y-2'>
+                    <div className='flex items-center gap-2 text-gray-600'>
+                      <span className='h-6 w-4 bg-gray-300 rounded animate-pulse' />
+                      <span className='w-10 h-6 bg-gray-300 animate-pulse rounded'></span>
+                    </div>
+
+                    <div className='flex items-center gap-2'>
+                      {/* email */}
+                      <span className='text-sm w-48 h-4 bg-gray-300 rounded animate-pulse' />
+                      {/* Botón de copy */}
+                      <button className='w-14 h-8 bg-gray-300 animate-pulse rounded' />
+
+                    </div>
+                  </div>
+
+
+                  {/* Cuenta */}
+                  <div className='space-y-2'>
+                    <div className='flex items-center gap-2 text-gray-600'>
+                      <span className='h-6 w-4 bg-gray-300 rounded animate-pulse' />
+
+                      <span className=' bg-gray-300 w-12 h-6 animate-pulse rounded' />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <div className='relative'>
+
+                        {/* input para cambiar el numero de telefono */}
+                        <div className='h-8 w-48 bg-gray-300 animate-pulse rounded' />
+
+                      </div>
+
+                      <button className='w-12 h-8  bg-gray-300 animate-pulse rounded'></button>
+
+                    </div>
+
+                  </div>
+                </div>
+              </div>
+
+
+              <div className='space-y-6 ml-10'>
+                <div className='space-y-4'>
+                  <h3 className='h-6 w-16  bg-gray-300 rounded animate-pulse' />
+
+                  <div className='space-y-2'>
+                    <div className='flex items-center gap-2 '>
+                      <span className='h-4 w-4 bg-gray-300 rounded animate-pulse' />
+                      <span className=' bg-gray-300 rounded w-14 h-6 animate-pulse' />
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      <span className='bg-gray-300 h-4 w-44 animate-pulse rounded'>
+                      </span>
+                      <button className='w-14 h-8 bg-gray-300 animate-pulse rounded'>
+
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+{/* For devs */}
+            <div className='mt-8'>
+              <div className='w-20 h-6 bg-gray-300 rounded animate-pulse'>
               </div>
             </div>
           </CardContent>
@@ -81,7 +185,7 @@ function ProfileLoading(): JSX.Element {
   );
 }
 
-// Componente cuando no hay usuario
+
 function NoUserProfile(): JSX.Element {
   return (
     <div className='min-h-screen flex items-center justify-center px-4'>
@@ -97,7 +201,6 @@ function NoUserProfile(): JSX.Element {
   );
 }
 
-// Componente del avatar
 interface ProfileAvatarProps {
   user: User;
   initials: string;
@@ -145,7 +248,6 @@ function ProfileAvatar({
   );
 }
 
-// Componente de información de contacto
 interface ContactInfoProps {
   user: User;
   tel: string;
@@ -178,7 +280,6 @@ function ContactInfo({
           Contact information
         </h3>
 
-        {/* Email */}
         <div className='space-y-2'>
           <div className='flex items-center gap-2 text-gray-600'>
             <Mail className='h-4 w-4' />
@@ -200,7 +301,6 @@ function ContactInfo({
           </div>
         </div>
 
-        {/* Teléfono */}
         <div className='space-y-2'>
           <div className='flex items-center gap-2 text-gray-600'>
             <Phone className='h-4 w-4' />
@@ -242,7 +342,6 @@ function ContactInfo({
   );
 }
 
-// Componente de información de cuenta
 interface AccountInfoProps {
   user: User;
   copied: 'id' | 'email' | null;
@@ -255,7 +354,6 @@ function AccountInfo({ user, copied, onCopy }: AccountInfoProps): JSX.Element {
       <div className='space-y-4'>
         <h3 className='text-lg font-semibold text-gray-900'>Account</h3>
 
-        {/* ID */}
         <div className='space-y-2'>
           <div className='flex items-center gap-2 text-gray-600'>
             <User2 className='h-4 w-4' />
@@ -283,15 +381,42 @@ function AccountInfo({ user, copied, onCopy }: AccountInfoProps): JSX.Element {
   );
 }
 
-// Hook para obtener el rol desde la API
+// Hook optimizado para obtener el rol con caché
 function useUserRole(user: User | null) {
   const [role, setRole] = useState<Role | null>(null);
   const [userInfo, setUserInfo] = useState<Partial<User> | null>(null);
-  const [loadingRole, setLoadingRole] = useState(true);
+  const [loadingRole, setLoadingRole] = useState(false); // ✅ Cambio: inicia en false
+  const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
       setLoadingRole(false);
+      setRole(null);
+      setUserInfo(null);
+      return;
+    }
+
+    // ✅ Si ya tenemos el rol del contexto y no hemos hecho fetch, usarlo inmediatamente
+    if (user.role && !fetchedRef.current) {
+      setRole(user.role as Role);
+      return;
+    }
+
+    // ✅ Evitar fetch repetido para el mismo usuario
+    if (fetchedRef.current === user.id) {
+      return;
+    }
+
+    // ✅ Verificar caché primero
+    const cached = userDataCache.get(user.id);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setRole(cached.data.role);
+      setUserInfo({
+        name: cached.data.name,
+        email: cached.data.email,
+        image: cached.data.image,
+      });
+      fetchedRef.current = user.id;
       return;
     }
 
@@ -299,9 +424,8 @@ function useUserRole(user: User | null) {
 
     const loadUserData = async () => {
       try {
-        if (cancelled) return;
         setLoadingRole(true);
-        
+
         const response = await fetch('/api/me');
 
         if (cancelled) return;
@@ -311,26 +435,31 @@ function useUserRole(user: User | null) {
         }
 
         const data = (await response.json()) as ApiMeResponse;
-        
+
         if (cancelled) return;
-        
+
+        // ✅ Guardar en caché
+        userDataCache.set(user.id, {
+          data,
+          timestamp: Date.now()
+        });
+
         setRole(data.role);
         setUserInfo({
           name: data.name,
           email: data.email,
           image: data.image,
         });
+        fetchedRef.current = user.id;
 
       } catch (error) {
         if (cancelled) return;
-        
+
         console.warn('Error loading user data from API:', error);
-        
+
         // Fallback al contexto de auth si está disponible
         if (user?.role === 'admin' || user?.role === 'user') {
           setRole(user.role as Role);
-        } else {
-          setRole(null);
         }
       } finally {
         if (!cancelled) {
@@ -340,11 +469,11 @@ function useUserRole(user: User | null) {
     };
 
     loadUserData();
-    
+
     return () => {
       cancelled = true;
     };
-  }, [user?.id, user?.role]);
+  }, [user?.id]); // ✅ Solo depende del ID del usuario
 
   // Resolver el rol final con fallback
   const resolvedRole: Role | null =
@@ -360,24 +489,45 @@ function useUserRole(user: User | null) {
     role: resolvedRole ?? user.role,
   } : null;
 
-  return { 
-    resolvedRole, 
-    loadingRole, 
-    enrichedUser 
+  return {
+    resolvedRole,
+    loadingRole,
+    enrichedUser
   };
 }
 
-// Hook personalizado para manejar el teléfono
+// Hook optimizado para manejar el teléfono con caché
 function useUserPhone(user: User | null) {
   const [tel, setTel] = useState('');
-  const [loadingPhone, setLoadingPhone] = useState(true);
+  const [loadingPhone, setLoadingPhone] = useState(false); // ✅ Cambio: inicia en false
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const fetchedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!user?.id) {
       setLoadingPhone(false);
+      setTel('');
+      return;
+    }
+
+    // ✅ Si ya tenemos el teléfono del contexto, usarlo inmediatamente
+    if (user.tel && !fetchedRef.current) {
+      setTel(String(user.tel));
+      return;
+    }
+
+    // ✅ Evitar fetch repetido para el mismo usuario
+    if (fetchedRef.current === user.id) {
+      return;
+    }
+
+    // ✅ Verificar caché primero
+    const cached = phoneDataCache.get(user.id);
+    if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+      setTel(String(cached.data?.tel ?? ''));
+      fetchedRef.current = user.id;
       return;
     }
 
@@ -385,9 +535,8 @@ function useUserPhone(user: User | null) {
 
     const loadPhone = async () => {
       try {
-        if (cancelled) return;
         setLoadingPhone(true);
-        
+
         const response = await fetch('/api/me/phone', {
           method: 'GET',
         });
@@ -399,14 +548,21 @@ function useUserPhone(user: User | null) {
         }
 
         const data = (await response.json()) as ApiPhoneResponse;
-        
+
         if (cancelled) return;
-        
+
+        // ✅ Guardar en caché
+        phoneDataCache.set(user.id, {
+          data,
+          timestamp: Date.now()
+        });
+
         setTel(String(data?.tel ?? ''));
-        
+        fetchedRef.current = user.id;
+
       } catch (error) {
         if (cancelled) return;
-        
+
         console.warn('Error loading phone:', error);
         // Fallback al contexto si está disponible
         setTel(String(user?.tel ?? ''));
@@ -418,11 +574,11 @@ function useUserPhone(user: User | null) {
     };
 
     loadPhone();
-    
+
     return () => {
       cancelled = true;
     };
-  }, [user?.id, user?.tel]);
+  }, [user?.id]); // ✅ Solo depende del ID del usuario
 
   const savePhone = async (): Promise<void> => {
     if (!user?.id) return;
@@ -449,7 +605,10 @@ function useUserPhone(user: User | null) {
       }
 
       setMsg('Teléfono actualizado');
-      
+
+      // ✅ Invalidar caché después de actualizar
+      phoneDataCache.delete(user.id);
+
     } catch (error: unknown) {
       const err = error as { message?: string };
       setErr(err?.message ?? 'No se pudo actualizar el teléfono');
@@ -470,7 +629,6 @@ function useUserPhone(user: User | null) {
   };
 }
 
-// Hook personalizado para copiar al portapapeles
 function useCopyToClipboard() {
   const [copied, setCopied] = useState<'id' | 'email' | null>(null);
 
@@ -495,7 +653,6 @@ export default function Profile(): JSX.Element {
   const { tel, setTel, loadingPhone, saving, msg, err, savePhone } = useUserPhone(user);
   const { copied, copy } = useCopyToClipboard();
 
-  // Usar el usuario enriquecido con datos del API
   const displayUser = enrichedUser ?? user;
 
   const initials = useMemo(() => {
@@ -522,16 +679,26 @@ export default function Profile(): JSX.Element {
     void savePhone();
   };
 
+
+
+
+
   if (status === 'loading') {
     return <ProfileLoading />;
   }
 
   if (!displayUser) {
     return <NoUserProfile />;
+
   }
 
+
+  // if (true) {
+  //   return <ProfileLoading />;
+  // }
+
   return (
-    <div className='min-h-screen flex items-center justify-center px-4 py-8'>
+    <div className=' flex items-center justify-center px-4 py-8'>
       <div className='w-full max-w-4xl'>
         <Card className='shadow-lg'>
           <CardHeader className='pb-6'>
@@ -539,17 +706,14 @@ export default function Profile(): JSX.Element {
           </CardHeader>
 
           <CardContent className='space-y-8'>
-            {/* Layout horizontal */}
             <div className='grid grid-cols-1 lg:grid-cols-3 gap-8'>
-              {/* Izquierda: avatar + nombre + rol */}
-              <ProfileAvatar  
+              <ProfileAvatar
                 user={displayUser}
                 initials={initials}
                 resolvedRole={resolvedRole}
                 loadingRole={loadingRole}
               />
 
-              {/* Centro: contacto */}
               <ContactInfo
                 user={displayUser}
                 tel={tel}
@@ -563,11 +727,9 @@ export default function Profile(): JSX.Element {
                 onSavePhone={handleSavePhone}
               />
 
-              {/* Derecha: cuenta */}
               <AccountInfo user={displayUser} copied={copied} onCopy={handleCopy} />
             </div>
 
-            {/* Debug */}
             <details className='mt-8'>
               <summary className='cursor-pointer text-sm text-gray-600 hover:text-gray-900'>
                 For devs
@@ -577,7 +739,11 @@ export default function Profile(): JSX.Element {
                   originalUser: user,
                   enrichedUser: displayUser,
                   resolvedRole,
-                  loadingRole
+                  loadingRole,
+                  cacheSize: {
+                    userData: userDataCache.size,
+                    phoneData: phoneDataCache.size
+                  }
                 }, null, 2)}
               </pre>
             </details>
