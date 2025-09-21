@@ -139,20 +139,32 @@ const AppLayout = ({ page }: { page: ReactElement }) => {
   return (
     <div className='flex h-screen overflow-hidden'>
       <Sidebar />
-        <main className='flex-1 overflow-y-auto bg-gray-50 px-4 py-2'>
+      <main className='flex-1 overflow-y-auto bg-gray-50 px-4 py-2'>
         <Topbar />
-          <div className='max-w-7xl mx-auto'>
-            {page}
-          </div>
-        </main>
+        <div className='max-w-7xl mx-auto'>
+          {page}
+        </div>
+      </main>
     </div>
   );
 };
-const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
+
+// Componente interno que usa el layout con acceso al contexto
+const AppWithLayout = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout ?? ((page) => <AppLayout page={page} />);
 
+  return getLayout(<Component {...pageProps} />);
+};
 
-  return <AuthProvider>{getLayout(<Component {...pageProps} />)}</AuthProvider>;
+// Componente principal que provee el contexto
+const MyApp = ({ Component, pageProps, ...rest }: AppPropsWithLayout) => {
+  const getLayout = Component.getLayout ?? ((page) => <AppLayout page={page} />);
+
+  return (
+    <AuthProvider>
+      {getLayout(<Component {...pageProps} />)}
+    </AuthProvider>
+  );
 };
 
 export default MyApp;
