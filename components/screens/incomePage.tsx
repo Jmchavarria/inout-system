@@ -21,7 +21,7 @@ type FormData = {
   concept: string;  // Concepto de la transacción
   amount: string;   // Monto como string (viene del input)
   date: string;     // Fecha en formato string
-};
+}; 
 
 // Tipo para los roles de usuario en el sistema
 type Role = 'admin' | 'user';
