@@ -13,106 +13,77 @@ type OkResponse = {
   image?: string;
 };
 
-type ErrResponse = { 
-  error: 'unauthorized' | 'forbidden' | 'server_error';
+type ErrResponse = {
+  error: 'unauthorized' | 'forbidden' | 'server_error' | 'method_not_allowed';
   message?: string;
 };
 
-// Normaliza cualquier string a 'admin' | 'user' - VERSIÓN CORREGIDA
-const toRole = (r: unknown): 'admin' | 'user' => {
-  console.log('🔍 [toRole] Input value:', r);
-  console.log('🔍 [toRole] Input type:', typeof r);
-  
-  // Primero verificar valores exactos
-  if (r === 'admin' || r === 'user') {
-    console.log('✅ [toRole] Exact match:', r);
-    return r;
-  }
-  
-  // Normalizar string: trim y lowercase
-  const normalized = String(r ?? '').trim().toLowerCase();
-  console.log('🔍 [toRole] Normalized value:', normalized);
-  
-  const result = normalized === 'admin' ? 'admin' : 'user';
-  console.log('✅ [toRole] Final result:', result);
-  
-  return result;
-};
+const isDev = process.env.NODE_ENV !== 'production';
+
+// Normaliza cualquier valor a 'admin' | 'user'
+const toRole = (role: unknown): Role =>
+  String(role ?? '').trim().toLowerCase() === 'admin' ? 'admin' : 'user';
 
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<OkResponse | ErrResponse>
 ) {
-  // Solo permitir GET
   if (req.method !== 'GET') {
-    return res.status(405).json({ 
-      error: 'server_error', 
-      message: 'Method not allowed' 
-    });
+    res.setHeader('Allow', 'GET');
+    return res
+      .status(405)
+      .json({ error: 'method_not_allowed', message: 'Method not allowed' });
   }
 
   try {
-    console.log('🔍 [API /me] Getting session...');
-    
-    // Obtener sesión del usuario
-    const session = await auth.api.getSession({
-      headers: req.headers as any,
-    });
+    if (isDev) console.debug('[API /me] Getting session from auth');
 
-    // Verificar que existe sesión y usuario
-    if (!session || !session.user) {
-      console.log('❌ [API /me] No session found');
-      return res.status(401).json({ error: 'unauthorized' });
+    // Obtener sesión (pasando headers para compatibilidad con SSR / cookies)
+    const session = await auth.api.getSession({ headers: req.headers as any });
+
+    if (!session?.user?.id) {
+      if (isDev) console.debug('[API /me] No session / no user id found');
+      return res.status(401).json({ error: 'unauthorized', message: 'No session' });
     }
 
-    console.log('📋 [API /me] Session user ID:', session.user.id);
+    const userId = session.user.id;
+    if (isDev) console.debug('[API /me] Session user id:', userId);
 
-    // Consultar usuario en la base de datos
-    console.log('🔍 [API /me] Querying user from database...');
-    
+    // Traer solo los campos necesarios (incluimos name/email/image por conveniencia)
     const userFromDb = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { 
-        id: true,
-        name: true,
-        email: true,
-        image: true,
-        role: true 
-      }
+      where: { id: userId },
+      select: { id: true, role: true, name: true, email: true, image: true },
     });
-    
-    console.log('📋 [API /me] User from database:', userFromDb);
-    console.log('📋 [API /me] Raw role from DB:', userFromDb?.role);
 
-    // Verificar que el usuario existe en la DB
     if (!userFromDb) {
-      console.log('❌ [API /me] User not found in database');
-      return res.status(404).json({ 
+      if (isDev) console.debug('[API /me] User not found in DB:', userId);
+      return res.status(500).json({
         error: 'server_error',
-        message: 'User not found in database'
+        message: 'User not found in database',
       });
     }
 
-    // Normalizar el rol desde la base de datos
     const finalRole = toRole(userFromDb.role);
-    console.log('✅ [API /me] Final role after normalization:', finalRole);
+    if (isDev) console.debug('[API /me] role from db:', userFromDb.role, '->', finalRole);
 
     const response: OkResponse = {
-      userId: userFromDb.id, 
+      userId: userFromDb.id,
       role: finalRole,
-      name: userFromDb.name || undefined,
-      email: userFromDb.email || undefined,
-      image: userFromDb.image || undefined,
+      name: userFromDb.name ?? undefined,
+      email: userFromDb.email ?? undefined,
+      image: userFromDb.image ?? undefined,
     };
 
-    console.log('✅ [API /me] Sending response:', response);
-    return res.status(200).json(response);
+    // Header de cache para CDNs / edge (opcional — ajusta valores según tu infra)
+    // Esto ayuda a reducir latencia en llamadas repetidas desde clientes
+    res.setHeader('Cache-Control', 'private, max-age=0, s-maxage=60, stale-while-revalidate=30');
 
+    return res.status(200).json(response);
   } catch (err) {
-    console.error('❌ [API /me] Unexpected error:', err);
-    return res.status(500).json({ 
+    console.error('[API /me] Unexpected error:', err);
+    return res.status(500).json({
       error: 'server_error',
-      message: 'Internal server error'
+      message: 'Internal server error',
     });
   }
 }
