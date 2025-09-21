@@ -12,6 +12,18 @@ const tips = [
   'Every dollar you save is one step closer to your financial independence.',
 ];
 
+
+// En tu componente, añade esto para verificar en producción:
+useEffect(() => {
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Base URL:', window.location.origin);
+
+  // Prueba si la imagen existe
+  fetch('/images/features/users.webp')
+    .then(res => console.log('Image fetch status:', res.status))
+    .catch(err => console.log('Image fetch error:', err));
+}, []);
+
 function LoginPage() {
   const { signInWithGitHub } = useAuth();
 
