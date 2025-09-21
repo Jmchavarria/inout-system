@@ -2,7 +2,7 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import Image from 'next/image';
-import { useAuth } from '../../context/auth-context'; // ← usa el contexto que expone signInWithGitHub
+import { useAuth } from '../../context/auth-context';
 
 const tips = [
   'Track every expense, no matter how small. The details build your real balance.',
@@ -11,8 +11,6 @@ const tips = [
   'Classify your expenses into needs, wants, and goals. This shows you where to cut back.',
   'Every dollar you save is one step closer to your financial independence.',
 ];
-
-
 
 function LoginPage() {
   const { signInWithGitHub } = useAuth();
@@ -26,15 +24,27 @@ function LoginPage() {
   const [currentTip, setCurrentTip] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [mounted, setMounted] = useState(false);
 
+  // Solución al Error #321: Verificar que el componente esté montado
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Solo ejecutar el interval después de que el componente esté montado
+  useEffect(() => {
+    if (!mounted) return;
+    
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % tips.length);
     }, 4000);
+    
     return () => clearInterval(interval);
-  }, []);
+  }, [mounted]); // Dependencia en mounted
 
   const handleGitHubSignIn = async () => {
+    if (!mounted) return; // Prevenir ejecución antes del montaje
+    
     setLoading(true);
     setError('');
     try {
@@ -42,7 +52,6 @@ function LoginPage() {
         callbackURL: '/',
         newUserCallbackURL: '/welcome',
       });
-      // redirige; no seteamos loading=false
     } catch (err: unknown) {
       const message =
         err instanceof Error
@@ -55,6 +64,15 @@ function LoginPage() {
     }
   };
 
+  // No renderizar hasta que esté montado para evitar hydration mismatch
+  if (!mounted) {
+    return (
+      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
+        <Loader2 className='h-8 w-8 animate-spin text-gray-600' />
+      </div>
+    );
+  }
+
   return (
     <div className='flex flex-col min-h-screen bg-gray-50'>
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
@@ -64,6 +82,7 @@ function LoginPage() {
           height={130}
           alt='Logo'
           className='w-32 h-32 object-contain'
+          priority
         />
       </div>
 
@@ -89,8 +108,9 @@ function LoginPage() {
             <button
               onClick={handleGitHubSignIn}
               disabled={loading}
-              className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
-                }`}
+              className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
+                loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
+              }`}
             >
               {loading ? <Loader2 className='h-5 w-5 animate-spin' /> : <GitHubIcon className='h-5 w-5' />}
               {loading ? 'Signing in...' : 'Continue with GitHub'}
@@ -110,7 +130,6 @@ function LoginPage() {
               fill
               sizes='(min-width: 768px) 50vw, 100vw'
               className='object-cover rounded-l-lg'
-              priority
             />
           </div>
 
@@ -124,8 +143,9 @@ function LoginPage() {
               {tips.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${index === currentTip ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-300'
-                    }`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    index === currentTip ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-300'
+                  }`}
                 />
               ))}
             </div>
