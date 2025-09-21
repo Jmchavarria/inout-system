@@ -46,8 +46,8 @@ function LoginPage() {
         err instanceof Error
           ? err.message
           : typeof err === 'string'
-          ? err
-          : 'Something went wrong. Please try again.';
+            ? err
+            : 'Something went wrong. Please try again.';
       setError(message);
       setLoading(false);
     }
@@ -57,8 +57,8 @@ function LoginPage() {
     <div className='flex flex-col min-h-screen bg-gray-50'>
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
         <Image
-          src='/images/logo.webp'
-          width ={130}
+          src='/images/features/users.webp'
+          width={130}
           height={130}
           alt='Logo'
           className='w-32 h-32 object-contain'
@@ -87,9 +87,8 @@ function LoginPage() {
             <button
               onClick={handleGitHubSignIn}
               disabled={loading}
-              className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
-                loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
-              }`}
+              className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
+                }`}
             >
               {loading ? <Loader2 className='h-5 w-5 animate-spin' /> : <GitHubIcon className='h-5 w-5' />}
               {loading ? 'Signing in...' : 'Continue with GitHub'}
@@ -104,7 +103,7 @@ function LoginPage() {
         <div className='relative hidden md:flex items-center justify-center w-1/2 bg-white'>
           <div className='absolute inset-0'>
             <Image
-              src='/images/login.avif'
+              src='/images/features/users.webp'
               alt='Financial background'
               fill
               sizes='(min-width: 768px) 50vw, 100vw'
@@ -123,9 +122,8 @@ function LoginPage() {
               {tips.map((_, index) => (
                 <div
                   key={index}
-                  className={`h-1.5 rounded-full transition-all duration-300 ${
-                    index === currentTip ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-300'
-                  }`}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${index === currentTip ? 'w-6 bg-gray-800' : 'w-1.5 bg-gray-300'
+                    }`}
                 />
               ))}
             </div>
