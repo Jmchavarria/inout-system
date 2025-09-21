@@ -58,7 +58,7 @@ function LoginPage() {
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
         <Image
           src='/images/logo.webp'
-          width={130}
+          width ={130}
           height={130}
           alt='Logo'
           className='w-32 h-32 object-contain'
