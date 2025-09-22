@@ -2,7 +2,7 @@
 import React, { ReactElement, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
-
+import Image from 'next/image';
 const tips = [
   'Track every expense, no matter how small. The details build your real balance.',
   'Save at least 10% of your income before spending anything else.',
