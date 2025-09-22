@@ -37,7 +37,9 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// 📌 Configuración para que no afecte estáticos ni API
+// 📌 Configuración CORREGIDA - excluye también /images/
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|api).*)'],
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|api|images).*)'
+  ],
 };

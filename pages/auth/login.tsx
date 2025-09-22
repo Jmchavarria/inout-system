@@ -104,7 +104,7 @@ function LoginPage() {
         <div className='relative hidden md:flex items-center justify-center w-1/2 bg-white'>
           <div className='absolute inset-0'>
             <Image
-              src='/images/login.avif'
+              src='/images/login.png'
               alt='Financial background'
               fill
               sizes='(min-width: 768px) 50vw, 100vw'
