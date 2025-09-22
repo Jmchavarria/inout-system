@@ -1,7 +1,6 @@
 // /pages/auth/login.tsx
 import React, { ReactElement, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
-import Image from 'next/image';
 import { useAuth } from '../../context/auth-context';
 
 const tips = [
@@ -24,27 +23,15 @@ function LoginPage() {
   const [currentTip, setCurrentTip] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const [mounted, setMounted] = useState(false);
 
-  // Solución al Error #321: Verificar que el componente esté montado
   useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // Solo ejecutar el interval después de que el componente esté montado
-  useEffect(() => {
-    if (!mounted) return;
-    
     const interval = setInterval(() => {
       setCurrentTip((prev) => (prev + 1) % tips.length);
     }, 4000);
-    
     return () => clearInterval(interval);
-  }, [mounted]); // Dependencia en mounted
+  }, []);
 
   const handleGitHubSignIn = async () => {
-    if (!mounted) return; // Prevenir ejecución antes del montaje
-    
     setLoading(true);
     setError('');
     try {
@@ -64,25 +51,22 @@ function LoginPage() {
     }
   };
 
-  // No renderizar hasta que esté montado para evitar hydration mismatch
-  if (!mounted) {
-    return (
-      <div className='flex items-center justify-center min-h-screen bg-gray-50'>
-        <Loader2 className='h-8 w-8 animate-spin text-gray-600' />
-      </div>
-    );
-  }
-
   return (
     <div className='flex flex-col min-h-screen bg-gray-50'>
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
-        <Image
+        {/* DEBUGGING: Usa img normal en lugar de next/image */}
+        <img
           src='/images/features/users.webp'
           width={130}
           height={130}
           alt='Logo'
           className='w-32 h-32 object-contain'
-          priority
+          onError={(e) => {
+            console.error('Image failed to load:', e);
+            // Fallback a una imagen diferente si falla
+            e.currentTarget.src = '/favicon.ico';
+          }}
+          onLoad={() => console.log('Image loaded successfully')}
         />
       </div>
 
@@ -124,12 +108,18 @@ function LoginPage() {
 
         <div className='relative hidden md:flex items-center justify-center w-1/2 bg-white'>
           <div className='absolute inset-0'>
-            <Image
+            {/* DEBUGGING: Usa img normal aquí también */}
+            <img
               src='/images/features/users.webp'
               alt='Financial background'
-              fill
-              sizes='(min-width: 768px) 50vw, 100vw'
-              className='object-cover rounded-l-lg'
+              className='w-full h-full object-cover rounded-l-lg'
+              onError={(e) => {
+                console.error('Background image failed to load:', e);
+                // Fallback a un gradiente si falla
+                e.currentTarget.style.display = 'none';
+                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+              }}
+              onLoad={() => console.log('Background image loaded successfully')}
             />
           </div>
 
