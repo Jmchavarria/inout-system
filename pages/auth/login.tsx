@@ -54,18 +54,15 @@ function LoginPage() {
   return (
     <div className='flex flex-col min-h-screen bg-gray-50'>
       <div className='border-b bg-white flex items-center justify-center py-4 shadow-sm'>
-        {/* DEBUGGING: Usa img normal en lugar de next/image */}
-        <img
+        {/* Usa next/image con unoptimized para evitar problemas de layout */}
+        <Image
           src='/images/features/users.webp'
           width={130}
           height={130}
           alt='Logo'
           className='w-32 h-32 object-contain'
-          onError={(e) => {
-            console.error('Image failed to load:', e);
-            // Fallback a una imagen diferente si falla
-            e.currentTarget.src = '/favicon.ico';
-          }}
+          unoptimized={true}
+          onError={() => console.error('Image failed to load')}
           onLoad={() => console.log('Image loaded successfully')}
         />
       </div>
@@ -108,17 +105,15 @@ function LoginPage() {
 
         <div className='relative hidden md:flex items-center justify-center w-1/2 bg-white'>
           <div className='absolute inset-0'>
-            {/* DEBUGGING: Usa img normal aquí también */}
-            <img
+            {/* Usa next/image con unoptimized para evitar problemas de layout */}
+            <Image
               src='/images/features/users.webp'
               alt='Financial background'
-              className='w-full h-full object-cover rounded-l-lg'
-              onError={(e) => {
-                console.error('Background image failed to load:', e);
-                // Fallback a un gradiente si falla
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement!.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
-              }}
+              fill
+              sizes='(min-width: 768px) 50vw, 100vw'
+              className='object-cover rounded-l-lg'
+              unoptimized={true}
+              onError={() => console.error('Background image failed to load')}
               onLoad={() => console.log('Background image loaded successfully')}
             />
           </div>
