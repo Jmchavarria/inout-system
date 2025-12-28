@@ -63,7 +63,7 @@ const Home = () => {
       iconType: 'chart',
       route: '/reports',
       restricted: true,
-      image: '/images/features/image.jpeg',
+      image: '/images/features/reports.jpeg',
       alt: 'Reports and analytics',
     },
   ];
