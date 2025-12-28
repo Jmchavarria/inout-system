@@ -138,16 +138,18 @@ const Topbar = () => {
 const AppLayout = ({ page }: { page: ReactElement }) => {
   return (
     <div className='flex h-screen overflow-hidden'>
-      <Sidebar />
-        <main className='flex-1 overflow-y-auto bg-gray-50 px-4 py-2'>
-        <Topbar />
-          <div className='max-w-7xl mx-auto'>
-            {page}
-          </div>
-        </main>
+      <Sidebar /> {/* Aparecerá en todas las páginas que usen este layout */}
+      <main className='flex-1 overflow-y-auto bg-gray-50  py-2'>
+        <div className='max-w-7xl '>
+          {page}
+        </div>
+      </main>
     </div>
   );
 };
+
+
+
 const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
   const getLayout = Component.getLayout ?? ((page) => <AppLayout page={page} />);
 

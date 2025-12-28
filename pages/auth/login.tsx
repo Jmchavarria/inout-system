@@ -88,7 +88,7 @@ function LoginPage() {
               onClick={handleGitHubSignIn}
               disabled={loading}
               className={`flex items-center justify-center gap-3 p-4 rounded-xl font-bold transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98] ${
-                loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-800 text-white'
+                loading ? 'bg-gray-400 cursor-not-allowed text-white' : 'bg-black hover:bg-gray-900 text-white'
               }`}
             >
               {loading ? <Loader2 className='h-5 w-5 animate-spin' /> : <GitHubIcon className='h-5 w-5' />}

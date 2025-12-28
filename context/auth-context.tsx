@@ -80,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         name?: string;
         email?: string;
         image?: string;
+        tel?:string;
       };
       
       // Construye el objeto usuario con los datos recibidos
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         email: data.email || null,                 // Email (convierte undefined a null)
         image: data.image || null,                 // Imagen (convierte undefined a null)
         role: data.role as 'admin' | 'user',       // Rol (cast al tipo esperado)
+        tel: data.tel || null 
       };
       
       setUser(user);                     // Establece el usuario

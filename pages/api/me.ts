@@ -11,6 +11,7 @@ type OkResponse = {
   name?: string;
   email?: string;
   image?: string;
+  tel?: string;  // ✅ CAMBIO 1: Agregar tel al tipo de respuesta
 };
 
 type ErrResponse = {
@@ -49,11 +50,22 @@ export default async function handler(
     const userId = session.user.id;
     if (isDev) console.debug('[API /me] Session user id:', userId);
 
-    // Traer solo los campos necesarios (incluimos name/email/image por conveniencia)
+    // ✅ CAMBIO 2: Agregar tel al select de Prisma
     const userFromDb = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, role: true, name: true, email: true, image: true },
+      select: { 
+        id: true, 
+        role: true, 
+        name: true, 
+        email: true, 
+        image: true,
+        tel: true,  // ✅ AGREGADO: Incluir tel en la consulta
+      },
+
+      
     });
+
+    console.log('🔍 USER FROM DB:', userFromDb);
 
     if (!userFromDb) {
       if (isDev) console.debug('[API /me] User not found in DB:', userId);
@@ -66,12 +78,14 @@ export default async function handler(
     const finalRole = toRole(userFromDb.role);
     if (isDev) console.debug('[API /me] role from db:', userFromDb.role, '->', finalRole);
 
+    // ✅ CAMBIO 3: Incluir tel en la respuesta
     const response: OkResponse = {
       userId: userFromDb.id,
       role: finalRole,
       name: userFromDb.name ?? undefined,
       email: userFromDb.email ?? undefined,
       image: userFromDb.image ?? undefined,
+      tel: userFromDb.tel ?? undefined,  // ✅ AGREGADO: Devolver tel
     };
 
     // Header de cache para CDNs / edge (opcional — ajusta valores según tu infra)

@@ -9,7 +9,7 @@
   - You are about to drop the column `providerId` on the `accounts` table. All the data in the column will be lost.
   - You are about to drop the column `refreshToken` on the `accounts` table. All the data in the column will be lost.
   - You are about to drop the column `refreshTokenExpiresAt` on the `accounts` table. All the data in the column will be lost.
-
+x
 */
 -- AlterTable
 ALTER TABLE "public"."accounts" DROP COLUMN "accessToken",
