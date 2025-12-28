@@ -7,16 +7,18 @@ import { Plus } from 'lucide-react';
 import { DataTable } from '../dataTable';
 import { NewTransactionForm, type Income } from '@/components/income';
 import { Button } from '@/components/ui';
+import { Avatar } from '@/features/profile/components/profileAvatar';
+import { useAuth } from '@/context/auth-context';
 
 // ============================================================================
 // DEFINICIÓN DE TIPOS
 // ============================================================================
 
-type FormData = { 
+type FormData = {
   concept: string;
   amount: string;
   date: string;
-}; 
+};
 
 type Role = 'admin' | 'user';
 type MeResponse = { role: Role };
@@ -35,6 +37,8 @@ type IncomeApi = {
 
 type IncomeListResponse = { items: IncomeApi[] };
 type CreateIncomeResponse = IncomeApi;
+
+
 
 // ============================================================================
 // DEFINICIÓN DE COLUMNAS PARA EL NUEVO DATATABLE
@@ -71,7 +75,7 @@ const columns = [
         currency: 'COP',
         minimumFractionDigits: 0,
       }).format(Math.abs(value));
-      
+
       // Colorea según sea ingreso o gasto
       return (
         <span className={value >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
@@ -131,7 +135,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 
   if (!response.ok) {
     let message = `HTTP ${response.status}`;
-    
+
     try {
       const errorData = (await response.json()) as { error?: string };
       if (errorData?.error) message = errorData.error;
@@ -166,7 +170,7 @@ const useUserRole = () => {
     };
 
     fetchUserRole();
-    
+
     return () => abortController.abort();
   }, []);
 
@@ -186,13 +190,13 @@ const useTransactions = () => {
       const data = await fetchJSON<IncomeListResponse>('/api/income', {
         signal,
       });
-      
+
       const normalizedItems = data.items.map(normalizeIncome);
       setItems(normalizedItems);
-      
+
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
-      
+
       setError('No se pudieron cargar las transacciones');
     } finally {
       if (!signal?.aborted) setIsLoading(false);
@@ -202,7 +206,7 @@ const useTransactions = () => {
   useEffect(() => {
     const abortController = new AbortController();
     loadTransactions(abortController.signal);
-    
+
     return () => abortController.abort();
   }, []);
 
@@ -242,18 +246,18 @@ const useCreateTransaction = (
       );
 
       const normalizedTransaction = normalizeIncome(createdTransaction);
-      
+
       setItems((prevItems) => [normalizedTransaction, ...prevItems]);
-      
+
       return true;
-      
+
     } catch (e: unknown) {
-      const errorMessage = e instanceof Error 
-        ? e.message 
+      const errorMessage = e instanceof Error
+        ? e.message
         : 'No se pudo crear la transacción';
       setError(errorMessage);
       return false;
-      
+
     } finally {
       setIsSubmitting(false);
     }
@@ -268,11 +272,14 @@ const useCreateTransaction = (
 
 export default function IncomeAndExpenses() {
   const [showForm, setShowForm] = useState(false);
-  
+
+
+  const { user } = useAuth()
+
   const role = useUserRole();
-  
+
   const { items, setItems, isLoading, error, setError } = useTransactions();
-  
+
   const isAdmin = role === 'admin';
 
   const { createTransaction, isSubmitting } = useCreateTransaction(
@@ -301,13 +308,27 @@ export default function IncomeAndExpenses() {
 
   return (
     <div className='h-full flex flex-col'>
-      
-      <div className='flex-shrink-0 px-6 py-4 border-b bg-white'>
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-bold text-gray-900'>Income and expenses</h2>
-          {headerActions}
+
+
+
+      <div className=' px-6    '>
+        <div className='flex items-end justify-end'>
+          <div className='cursor-pointer'>
+
+            <Avatar
+
+              initials={user?.name?.slice(0, 2).toUpperCase() || 'U'}
+              height={60}  // 48px = 12 en Tailwind (h-12 w-12)
+              width={60}
+              user={user}
+            />
+
+          </div>
+
+
+          {/* {headerActions} */}
         </div>
-        
+
         {error && (
           <div
             role='alert'
@@ -322,13 +343,8 @@ export default function IncomeAndExpenses() {
         <div className='w-full h-full'>
           {/* CAMBIO: Usa el nuevo DataTable con las propiedades correctas */}
           <DataTable
-            columns={columns}              // Las columnas definidas arriba
-            data={items}                   // Los datos normalizados
-            showFinancialSummary={true}    // Muestra el resumen financiero
-            totalField="amount"            // Campo para calcular totales
-            isLoading={isLoading}          // Estado de carga
-            pageSize={10}                  // Tamaño de página (ajusta según necesites)
-            // headerActions se maneja en el header principal, no aquí
+            title='Income and Expenses'
+          // headerActions se maneja en el header principal, no aquí
           />
         </div>
       </div>

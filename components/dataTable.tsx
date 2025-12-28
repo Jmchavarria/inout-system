@@ -1,364 +1,256 @@
-'use client';
+import React, { useState, useMemo } from 'react';
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 
-import React, { useState, useMemo, useCallback } from 'react';
-import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
-
-// Tipos
-interface Column<TData> {
-  id: string;
-  header: string | ((props: { column: Column<TData> }) => React.ReactNode);
-  accessorKey?: string;
-  cell?: (props: { row: TData; value: any }) => React.ReactNode;
-  enableSorting?: boolean;
-  enableHiding?: boolean;
+// Types
+interface User {
+  id: number;
+  name: string;
+  email: string;
+  role: 'Admin' | 'Usuario' | 'Editor';
+  status: 'Activo' | 'Inactivo';
 }
 
-interface DataTableProps<TData> {
-  columns: Column<TData>[];
-  data: TData[];
-  showTotal?: boolean;
-  showFinancialSummary?: boolean;
-  totalField?: string;
-  headerActions?: React.ReactNode;
-  isLoading?: boolean;
-  pageSize?: number;
-}
+type SortDirection = 'asc' | 'desc';
+type SortKey = keyof User | null;
 
 interface SortConfig {
-  key: string;
-  direction: 'asc' | 'desc' | null;
+  key: SortKey;
+  direction: SortDirection;
 }
 
-// Componentes auxiliares
-const LoadingRow: React.FC<{ colSpan: number }> = ({ colSpan }) => (
-  <tr>
-    <td colSpan={colSpan} className='h-24 text-center px-4 py-2'>
-      <div className='flex items-center justify-center gap-2'>
-        <div className='animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600' />
-        Cargando...
-      </div>
-    </td>
-  </tr>
-);
+interface SortIconProps {
+  column: keyof User;
+}
 
-const NoResultsRow: React.FC<{ colSpan: number }> = ({ colSpan }) => (
-  <tr>
-    <td colSpan={colSpan} className='h-24 text-center px-4 py-2'>
-      No results.
-    </td>
-  </tr>
-);
+// Datos de ejemplo
+const initialData: User[] = [
+  { id: 1, name: 'Juan Pérez', email: 'juan@example.com', role: 'Admin', status: 'Activo' },
+  { id: 2, name: 'María García', email: 'maria@example.com', role: 'Usuario', status: 'Activo' },
+  { id: 3, name: 'Carlos López', email: 'carlos@example.com', role: 'Usuario', status: 'Inactivo' },
+  { id: 4, name: 'Ana Martínez', email: 'ana@example.com', role: 'Editor', status: 'Activo' },
+  { id: 5, name: 'Pedro Sánchez', email: 'pedro@example.com', role: 'Usuario', status: 'Activo' },
+  { id: 6, name: 'Laura Rodríguez', email: 'laura@example.com', role: 'Admin', status: 'Inactivo' },
+  { id: 7, name: 'Diego Torres', email: 'diego@example.com', role: 'Editor', status: 'Activo' },
+  { id: 8, name: 'Sofia Ramírez', email: 'sofia@example.com', role: 'Usuario', status: 'Activo' },
+];
 
-const FinancialSummary: React.FC<{
-  calculateTotal: number;
-  isLoading: boolean;
-  formatCurrency: (amount: number) => string;
-}> = ({ calculateTotal, isLoading, formatCurrency }) => {
-  if (isLoading) {
-    return <div className='animate-pulse bg-gray-200 h-6 w-24 rounded' />;
-  }
+interface DataTableProps {
+  title: string;
+}
 
-  return (
-    <>
-      <span
-        className={`font-bold text-lg ${
-          calculateTotal >= 0 ? 'text-green-600' : 'text-red-600'
-        }`}
-      >
-        {calculateTotal >= 0 ? '+' : ''}
-        {formatCurrency(calculateTotal)}
-      </span>
-      <div className='text-sm text-gray-500'>
-        <div>Incomes: {formatCurrency(Math.max(calculateTotal, 0))}</div>
-        <div>Expenses: {formatCurrency(Math.min(calculateTotal, 0))}</div>
-      </div>
-    </>
-  );
-};
+export const DataTable: React.FC<DataTableProps> = ({ title }) => {
+  const [data, setData] = useState<User[]>(initialData);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 5;
 
-// Componente principal
-export function DataTable<TData extends Record<string, any>>({
-  columns,
-  data,
-  showTotal = true,
-  showFinancialSummary = false,
-  totalField = 'amount',
-  headerActions,
-  isLoading = false,
-  pageSize = 4,
-}: DataTableProps<TData>): JSX.Element {
-  const [globalFilter, setGlobalFilter] = useState('');
-  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: '', direction: null });
-  const [columnVisibility, setColumnVisibility] = useState<Record<string, boolean>>(() => {
-    const initial: Record<string, boolean> = {};
-    columns.forEach((col) => {
-      initial[col.id] = true;
-    });
-    return initial;
-  });
-  const [currentPage, setCurrentPage] = useState(1);
-  const [showColumnMenu, setShowColumnMenu] = useState(false);
-
-  // Obtener valor de una celda
-  const getCellValue = useCallback((row: TData, column: Column<TData>) => {
-    if (column.accessorKey) {
-      return row[column.accessorKey];
-    }
-    return null;
-  }, []);
-
-  // Filtrar datos
+  // Filtrado
   const filteredData = useMemo(() => {
-    if (!globalFilter) return data;
+    return data.filter(item =>
+      Object.values(item).some(value =>
+        value.toString().toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    );
+  }, [data, searchTerm]);
 
-    return data.filter((row) => {
-      return columns.some((column) => {
-        const value = getCellValue(row, column);
-        if (value == null) return false;
-        return String(value).toLowerCase().includes(globalFilter.toLowerCase());
-      });
-    });
-  }, [data, globalFilter, columns, getCellValue]);
-
-  // Ordenar datos
+  // Ordenamiento
   const sortedData = useMemo(() => {
-    if (!sortConfig.key || !sortConfig.direction) return filteredData;
+    if (!sortConfig.key) return filteredData;
 
     return [...filteredData].sort((a, b) => {
-      const column = columns.find((col) => col.id === sortConfig.key);
-      if (!column) return 0;
+      const aVal = a[sortConfig.key as keyof User];
+      const bVal = b[sortConfig.key as keyof User];
 
-      const aValue = getCellValue(a, column);
-      const bValue = getCellValue(b, column);
-
-      if (aValue == null) return 1;
-      if (bValue == null) return -1;
-
-      if (typeof aValue === 'number' && typeof bValue === 'number') {
-        return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-      }
-
-      const aStr = String(aValue).toLowerCase();
-      const bStr = String(bValue).toLowerCase();
-
-      if (sortConfig.direction === 'asc') {
-        return aStr.localeCompare(bStr);
-      }
-      return bStr.localeCompare(aStr);
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
     });
-  }, [filteredData, sortConfig, columns, getCellValue]);
+  }, [filteredData, sortConfig]);
 
-  // Paginar datos
-  const paginatedData = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return sortedData.slice(startIndex, startIndex + pageSize);
-  }, [sortedData, currentPage, pageSize]);
-
-  const totalPages = Math.ceil(sortedData.length / pageSize);
-
-  // Manejar ordenamiento
-  const handleSort = useCallback((columnId: string) => {
-    setSortConfig((prev) => {
-      if (prev.key !== columnId) {
-        return { key: columnId, direction: 'asc' };
-      }
-      if (prev.direction === 'asc') {
-        return { key: columnId, direction: 'desc' };
-      }
-      return { key: '', direction: null };
-    });
-  }, []);
-
-  // Calcular total financiero
-  const calculateTotal = useMemo(() => {
-    if (!showFinancialSummary || isLoading) return 0;
-
-    return sortedData.reduce((sum, row) => {
-      const value = row[totalField];
-      return sum + (typeof value === 'number' ? value : 0);
-    }, 0);
-  }, [showFinancialSummary, isLoading, totalField, sortedData]);
-
-  // Formatear moneda
-  const formatCurrency = useCallback(
-    (amount: number) =>
-      new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-      }).format(Math.abs(amount)),
-    []
+  // Paginación
+  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const paginatedData = sortedData.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
-  // Columnas visibles
-  const visibleColumns = useMemo(() => {
-    return columns.filter((col) => columnVisibility[col.id]);
-  }, [columns, columnVisibility]);
-
-  // Renderizar encabezado de columna
-  const renderHeader = (column: Column<TData>) => {
-    const isSortable = column.enableSorting !== false;
-    const isSorted = sortConfig.key === column.id;
-
-    const headerContent = typeof column.header === 'function' 
-      ? column.header({ column }) 
-      : column.header;
-
-    if (!isSortable) {
-      return <span className="font-medium text-gray-700">{headerContent}</span>;
-    }
-
-    return (
-      <button
-        onClick={() => handleSort(column.id)}
-        className='flex items-center gap-1 hover:text-gray-900 font-medium text-gray-700 transition-colors'
-      >
-        {headerContent}
-        {isSorted && sortConfig.direction === 'asc' && <ChevronUp className='w-4 h-4' />}
-        {isSorted && sortConfig.direction === 'desc' && <ChevronDown className='w-4 h-4' />}
-        {!isSorted && <ChevronsUpDown className='w-4 h-4 opacity-40' />}
-      </button>
-    );
+  const handleSort = (key: keyof User): void => {
+    setSortConfig(prev => ({
+      key,
+      direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc'
+    }));
   };
 
-  // Renderizar celda
-  const renderCell = (row: TData, column: Column<TData>) => {
-    const value = getCellValue(row, column);
-    
-    if (column.cell) {
-      return column.cell({ row, value });
-    }
+  const SortIcon: React.FC<SortIconProps> = ({ column }) => {
+    if (sortConfig.key !== column) return <ChevronsUpDown className="w-4 h-4 ml-1" />;
+    return sortConfig.direction === 'asc'
+      ? <ChevronUp className="w-4 h-4 ml-1" />
+      : <ChevronDown className="w-4 h-4 ml-1" />;
+  };
 
-    return value != null ? String(value) : '';
+  const getRoleBadgeClass = (role: User['role']): string => {
+    switch (role) {
+      case 'Admin':
+        return 'bg-purple-100 text-purple-800';
+      case 'Editor':
+        return 'bg-blue-100 text-blue-800';
+      case 'Usuario':
+        return 'bg-gray-100 text-gray-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getStatusBadgeClass = (status: User['status']): string => {
+    return status === 'Activo'
+      ? 'bg-green-100 text-green-800'
+      : 'bg-red-100 text-red-800';
   };
 
   return (
-    <div className="w-full">
-      {/* Header con filtros */}
-      <div className='flex gap-2.5 py-4 justify-between flex-wrap'>
-        <div className='flex flex-1 gap-2.5 flex-wrap min-w-[200px]'>
-          <input
-            type="text"
-            placeholder='Buscar...'
-            value={globalFilter}
-            onChange={(e) => {
-              setGlobalFilter(e.target.value);
-              setCurrentPage(1);
-            }}
-            className='max-w-sm px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed'
-            disabled={isLoading}
-          />
-          <div className="relative">
-            <button
-              onClick={() => setShowColumnMenu(!showColumnMenu)}
-              className='px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed font-medium'
-              disabled={isLoading}
-            >
-              Columns
-            </button>
-            {showColumnMenu && (
-              <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10 min-w-[150px]">
-                {columns
-                  .filter((col) => col.enableHiding !== false)
-                  .map((column) => (
-                    <label
-                      key={column.id}
-                      className='flex items-center gap-2 px-4 py-2 hover:bg-gray-50 cursor-pointer'
-                    >
-                      <input
-                        type="checkbox"
-                        checked={columnVisibility[column.id]}
-                        onChange={(e) =>
-                          setColumnVisibility((prev) => ({
-                            ...prev,
-                            [column.id]: e.target.checked,
-                          }))
-                        }
-                        className="w-4 h-4"
-                      />
-                      <span className="capitalize text-sm">
-                        {typeof column.header === 'string' ? column.header : column.id}
-                      </span>
-                    </label>
-                  ))}
-              </div>
-            )}
-          </div>
-        </div>
-        {headerActions}
-      </div>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-8">
+      <div className="max-w-6xl mx-auto">
+        <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200">
+            <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
 
-      {/* Tabla */}
-      <div className='rounded-md border border-gray-200 overflow-hidden'>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
-            <thead className='bg-gray-100'>
-              <tr>
-                {visibleColumns.map((column) => (
-                  <th key={column.id} className="text-left px-4 py-3 border-b border-gray-200">
-                    {renderHeader(column)}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {isLoading ? (
-                <LoadingRow colSpan={visibleColumns.length} />
-              ) : paginatedData.length === 0 ? (
-                <NoResultsRow colSpan={visibleColumns.length} />
-              ) : (
-                paginatedData.map((row, index) => (
-                  <tr key={index} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
-                    {visibleColumns.map((column) => (
-                      <td key={column.id} className="px-4 py-3">{renderCell(row, column)}</td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Footer con totales */}
-        {showTotal && (
-          <div className='border-t border-gray-200 bg-gray-50 px-6 py-3'>
-            <div className='flex justify-between items-center flex-wrap gap-4'>
-              <span className='font-semibold text-gray-700'>
-                Total: {isLoading ? '...' : sortedData.length} records
-              </span>
-
-              {showFinancialSummary && (
-                <div className='flex gap-4'>
-                  <FinancialSummary
-                    calculateTotal={calculateTotal}
-                    isLoading={isLoading}
-                    formatCurrency={formatCurrency}
-                  />
-                </div>
-              )}
+            {/* Buscador */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Buscar en todos los campos..."
+                value={searchTerm}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                  setSearchTerm(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+              />
             </div>
           </div>
-        )}
 
-        {/* Paginación */}
-        <div className='flex items-center justify-end gap-3 py-4 px-6 border-t border-gray-200'>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
-            disabled={currentPage === 1 || isLoading}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Previous
-          </button>
-          <span className='text-sm text-gray-600 font-medium'>
-            Page {currentPage} of {totalPages || 1}
-          </span>
-          <button
-            onClick={() => setCurrentPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={currentPage >= totalPages || isLoading}
-            className="px-4 py-2 text-sm border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            Next
-          </button>
+          {/* Tabla */}
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th
+                    onClick={() => handleSort('id')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center">
+                      ID <SortIcon column="id" />
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('name')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center">
+                      Nombre <SortIcon column="name" />
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('email')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center">
+                      Email <SortIcon column="email" />
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('role')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center">
+                      Rol <SortIcon column="role" />
+                    </div>
+                  </th>
+                  <th
+                    onClick={() => handleSort('status')}
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition"
+                  >
+                    <div className="flex items-center">
+                      Estado <SortIcon column="status" />
+                    </div>
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {paginatedData.map((item) => (
+                  <tr
+                    key={item.id}
+                    className="hover:bg-gray-50 transition"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {item.id}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="text-sm font-medium text-gray-900">{item.name}</div>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {item.email}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getRoleBadgeClass(item.role)}`}>
+                        {item.role}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusBadgeClass(item.status)}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer con paginación */}
+          <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+            <div className="text-sm text-gray-700">
+              Mostrando <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> a{' '}
+              <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> de{' '}
+              <span className="font-medium">{sortedData.length}</span> resultados
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Anterior
+              </button>
+
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition ${currentPage === page
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+              >
+                Siguiente
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
