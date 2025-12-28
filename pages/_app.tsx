@@ -139,8 +139,8 @@ const AppLayout = ({ page }: { page: ReactElement }) => {
   return (
     <div className='flex h-screen overflow-hidden'>
       <Sidebar /> {/* Aparecerá en todas las páginas que usen este layout */}
-      <main className='flex-1 overflow-y-auto bg-gray-50  py-2'>
-        <div className='max-w-7xl '>
+      <main className='flex-1  bg-gray-50  '>
+        <div className=' '>
           {page}
         </div>
       </main>
