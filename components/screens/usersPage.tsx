@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from 'react';
 // Componentes específicos para manejo de usuarios
 import { createUserColumns, User, UserEditForm } from '@/components/users';
 // Componente de tabla de datos reutilizable
-import { DataTable } from '@/components/dataTable';
+import { DataTable } from '../dataTable';
 
 // ============================================================================
 // DEFINICIÓN DE TIPOS
@@ -58,7 +58,7 @@ const useUsers = () => {
   const loadUsers = useCallback(async () => {
     try {
       setIsLoading(true); // Inicia estado de carga
-      
+
       // Petición GET a la API de usuarios
       const response = await fetch('/api/users');
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -66,7 +66,7 @@ const useUsers = () => {
       // Extrae la lista de usuarios de la respuesta
       const { items } = (await response.json()) as { items: User[] };
       setUsers(items); // Actualiza el estado con los usuarios
-      
+
     } catch (err) {
       // Manejo de errores: log y notificación al usuario
       console.error('[getUsers] error:', err);
@@ -161,7 +161,7 @@ const useUserOperations = (
       if (editingUser?.id) {
         // MODO EDICIÓN: actualiza usuario existente
         result = await updateUser(editingUser.id, data);
-        
+
         // Actualiza el usuario en la lista local
         setUsers((prev) =>
           prev.map((u) => (u.id === result.id ? { ...u, ...result } : u))
@@ -169,13 +169,13 @@ const useUserOperations = (
       } else {
         // MODO CREACIÓN: crea nuevo usuario
         result = await createUser(data);
-        
+
         // Agrega el nuevo usuario al inicio de la lista
         setUsers((prev) => [result, ...prev]);
       }
 
       return true; // Indica éxito
-      
+
     } catch (error) {
       // Manejo de errores con mensaje apropiado
       const errorMessage =
@@ -184,7 +184,7 @@ const useUserOperations = (
       console.error('[handleUser] error:', error);
       alert(errorMessage); // Notifica al usuario
       return false; // Indica fallo
-      
+
     } finally {
       setIsLoading(false); // Desactiva loading
     }
@@ -201,24 +201,24 @@ export default function UsersPage(): JSX.Element {
   // ========================================================================
   // ESTADO LOCAL
   // ========================================================================
-  
+
   const [showForm, setShowForm] = useState(false);        // Controla visibilidad del formulario
   const [editingUser, setEditingUser] = useState<User | null>(null); // Usuario siendo editado
 
   // ========================================================================
   // HOOKS PERSONALIZADOS
   // ========================================================================
-  
+
   // Hook para manejar lista de usuarios
   const { users, setUsers, isLoading, setIsLoading, loadUsers } = useUsers();
-  
+
   // Hook para operaciones CRUD
   const { handleUserOperation } = useUserOperations(setUsers, setIsLoading);
 
   // ========================================================================
   // EFFECTS
   // ========================================================================
-  
+
   // Carga inicial de usuarios al montar el componente
   useEffect(() => {
     void loadUsers(); // void para ignorar la Promise en useEffect
@@ -281,10 +281,7 @@ export default function UsersPage(): JSX.Element {
         {/* Contenedor de la tabla */}
         <div className='max-w-7xl mx-auto'>
           <DataTable
-            columns={userColumns}     // Columnas con botón de edición
-            data={users}              // Lista de usuarios
-            isLoading={isLoading}     // Estado de carga
-            showTotal={true}          // Muestra total de registros
+          title='Users'
           />
         </div>
 
@@ -299,9 +296,9 @@ export default function UsersPage(): JSX.Element {
               editingUser={
                 editingUser
                   ? {
-                      name: editingUser.name ?? '',           // Nombre actual o vacío
-                      role: normalizeRole(editingUser.role),  // Rol normalizado
-                    }
+                    name: editingUser.name ?? '',           // Nombre actual o vacío
+                    role: normalizeRole(editingUser.role),  // Rol normalizado
+                  }
                   : null // null indica modo creación
               }
             />
