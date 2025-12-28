@@ -10,7 +10,7 @@ interface ProfileAvatarProps {
 export function ProfileAvatar({ user, initials }: ProfileAvatarProps): JSX.Element {
 
     return (
-        <div className='flex items-center space-x-4'>
+        <div className='flex items-center gap-3 shrink-0'>
             <div className='relative h-32 w-32 shrink-0 rounded-full bg-gray-100  ring-gray-200 flex items-center justify-center text-2xl font-semibold text-gray-600 overflow-hidden'>
                 {user?.image ? (
                     <Image
