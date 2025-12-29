@@ -1,14 +1,11 @@
 // components/screens/IncomeAndExpenses.tsx
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { Plus } from 'lucide-react';
-// CAMBIO: Importa el nuevo DataTable personalizado
+import { useEffect, useMemo, useState, useCallback, useTransition } from 'react';
+import { Plus, AlertCircle } from 'lucide-react';
 import { DataTable } from '../dataTable';
 import { NewTransactionForm, type Income } from '@/components/income';
 import { Button } from '@/components/ui';
-import { Avatar } from '@/features/profile/components/profileAvatar';
-import { useAuth } from '@/context/auth-context';
 
 // ============================================================================
 // DEFINICIÓN DE TIPOS
@@ -37,62 +34,6 @@ type IncomeApi = {
 
 type IncomeListResponse = { items: IncomeApi[] };
 type CreateIncomeResponse = IncomeApi;
-
-
-
-// ============================================================================
-// DEFINICIÓN DE COLUMNAS PARA EL NUEVO DATATABLE
-// ============================================================================
-
-// Define las columnas en el formato del nuevo DataTable
-const columns = [
-  {
-    id: 'date',
-    header: 'Date',
-    accessorKey: 'date',
-    cell: ({ value }: { value: string }) => {
-      // Formatea la fecha
-      return new Date(value).toLocaleDateString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      });
-    }
-  },
-  {
-    id: 'concept',
-    header: 'Concept',
-    accessorKey: 'concept',
-  },
-  {
-    id: 'amount',
-    header: 'Amount',
-    accessorKey: 'amount',
-    cell: ({ value }: { value: number }) => {
-      // Formatea el monto como moneda
-      const formatted = new Intl.NumberFormat('es-CO', {
-        style: 'currency',
-        currency: 'COP',
-        minimumFractionDigits: 0,
-      }).format(Math.abs(value));
-
-      // Colorea según sea ingreso o gasto
-      return (
-        <span className={value >= 0 ? 'text-green-600 font-medium' : 'text-red-600 font-medium'}>
-          {value >= 0 ? '+' : '-'}{formatted}
-        </span>
-      );
-    }
-  },
-  {
-    id: 'user',
-    header: 'User',
-    accessorKey: 'user',
-    cell: ({ value }: { value: Income['user'] }) => {
-      return value?.name || value?.email || 'Unknown';
-    }
-  }
-];
 
 // ============================================================================
 // FUNCIONES HELPER PARA NORMALIZACIÓN DE DATOS
@@ -127,33 +68,52 @@ function normalizeIncome(t: IncomeApi): Income {
 }
 
 // ============================================================================
-// FUNCIÓN HELPER PARA PETICIONES HTTP
+// FUNCIÓN HELPER PARA PETICIONES HTTP CON MEJOR MANEJO DE ERRORES
 // ============================================================================
 
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(url, init);
+  console.log(`🔄 Fetching: ${url}`);
+  
+  try {
+    const response = await fetch(url, init);
+    
+    console.log(`📡 Response status for ${url}:`, response.status);
 
-  if (!response.ok) {
-    let message = `HTTP ${response.status}`;
+    if (!response.ok) {
+      let message = `HTTP ${response.status}`;
+      let errorDetails = '';
 
-    try {
-      const errorData = (await response.json()) as { error?: string };
-      if (errorData?.error) message = errorData.error;
-    } catch {
-      // Si no puede parsear el JSON de error, usa el mensaje por defecto
+      try {
+        const errorData = (await response.json()) as { error?: string; message?: string };
+        errorDetails = errorData?.error || errorData?.message || '';
+        if (errorDetails) message = errorDetails;
+      } catch {
+        // Si no puede parsear el JSON de error
+        const text = await response.text();
+        console.error(`❌ Error response text:`, text);
+      }
+      
+      console.error(`❌ Request failed for ${url}:`, message);
+      throw new Error(message);
     }
-    throw new Error(message);
-  }
 
-  return (await response.json()) as T;
+    const data = await response.json();
+    console.log(`✅ Success for ${url}:`, data);
+    return data as T;
+    
+  } catch (error) {
+    console.error(`❌ Fetch error for ${url}:`, error);
+    throw error;
+  }
 }
 
 // ============================================================================
-// HOOKS PERSONALIZADOS
+// HOOKS PERSONALIZADOS CON MEJOR MANEJO DE ERRORES
 // ============================================================================
 
 const useUserRole = () => {
   const [role, setRole] = useState<Role | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const abortController = new AbortController();
@@ -162,10 +122,17 @@ const useUserRole = () => {
       try {
         const data = await fetchJSON<MeResponse>('/api/me', {
           signal: abortController.signal,
+          credentials: 'include', // Importante para cookies de sesión
         });
         setRole(data.role);
-      } catch {
-        setRole('user');
+        setError(null);
+      } catch (e) {
+        if (e instanceof DOMException && e.name === 'AbortError') return;
+        
+        const errorMsg = e instanceof Error ? e.message : 'Error al obtener rol';
+        console.error('❌ Error fetching user role:', errorMsg);
+        setError(errorMsg);
+        setRole('user'); // Fallback a user
       }
     };
 
@@ -174,7 +141,7 @@ const useUserRole = () => {
     return () => abortController.abort();
   }, []);
 
-  return role;
+  return { role, error };
 };
 
 const useTransactions = () => {
@@ -182,35 +149,48 @@ const useTransactions = () => {
   const [items, setItems] = useState<Income[]>([]);
   const [error, setError] = useState<string | null>(null);
 
-  const loadTransactions = async (signal?: AbortSignal) => {
+  const loadTransactions = useCallback(async (signal?: AbortSignal) => {
     try {
       setIsLoading(true);
       setError(null);
 
       const data = await fetchJSON<IncomeListResponse>('/api/income', {
         signal,
+        credentials: 'include', // Importante para cookies de sesión
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
+      // Validar que items exista y sea un array
+      if (!data || !Array.isArray(data.items)) {
+        throw new Error('Formato de respuesta inválido');
+      }
 
       const normalizedItems = data.items.map(normalizeIncome);
       setItems(normalizedItems);
+      setError(null);
 
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === 'AbortError') return;
 
-      setError('No se pudieron cargar las transacciones');
+      const errorMsg = e instanceof Error ? e.message : 'No se pudieron cargar las transacciones';
+      console.error('❌ Error loading transactions:', errorMsg);
+      setError(errorMsg);
+      setItems([]); // Array vacío en caso de error
     } finally {
       if (!signal?.aborted) setIsLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     const abortController = new AbortController();
     loadTransactions(abortController.signal);
 
     return () => abortController.abort();
-  }, []);
+  }, [loadTransactions]);
 
-  return { items, setItems, isLoading, error, setError };
+  return { items, setItems, isLoading, error, setError, reload: loadTransactions };
 };
 
 const useCreateTransaction = (
@@ -220,7 +200,7 @@ const useCreateTransaction = (
 ) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const createTransaction = async (data: FormData) => {
+  const createTransaction = useCallback(async (data: FormData) => {
     if (!isAdmin) {
       setError('No tienes permiso para crear transacciones.');
       return false;
@@ -236,32 +216,56 @@ const useCreateTransaction = (
         date: data.date,
       };
 
+      // Optimistic update
+      const tempId = `temp-${Date.now()}`;
+      const tempTransaction: Income = {
+        id: tempId,
+        concept: payload.concept,
+        amount: payload.amount,
+        date: payload.date,
+        user: { id: '', name: 'You', email: '' }
+      };
+      
+      setItems((prevItems) => [tempTransaction, ...prevItems]);
+
       const createdTransaction = await fetchJSON<CreateIncomeResponse>(
         '/api/income/create',
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
           body: JSON.stringify(payload),
         }
       );
 
       const normalizedTransaction = normalizeIncome(createdTransaction);
 
-      setItems((prevItems) => [normalizedTransaction, ...prevItems]);
+      // Reemplazar el temporal con el real
+      setItems((prevItems) => 
+        prevItems.map(item => 
+          item.id === tempId ? normalizedTransaction : item
+        )
+      );
 
       return true;
 
     } catch (e: unknown) {
+      // Revertir el optimistic update
+      setItems((prevItems) => 
+        prevItems.filter(item => !item.id.toString().startsWith('temp-'))
+      );
+      
       const errorMessage = e instanceof Error
         ? e.message
         : 'No se pudo crear la transacción';
+      console.error('❌ Error creating transaction:', errorMessage);
       setError(errorMessage);
       return false;
 
     } finally {
       setIsSubmitting(false);
     }
-  };
+  }, [isAdmin, setItems, setError]);
 
   return { createTransaction, isSubmitting };
 };
@@ -271,15 +275,19 @@ const useCreateTransaction = (
 // ============================================================================
 
 export default function IncomeAndExpenses() {
+  const columns = useMemo(() => [
+    { key: 'id', label: 'ID' },
+    { key: 'concept', label: 'Concept' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'date', label: 'Date' },
+    { key: 'user', label: 'User' }
+  ], []);
+
   const [showForm, setShowForm] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
-
-  const { user } = useAuth()
-
-  const role = useUserRole();
-
-  const { items, setItems, isLoading, error, setError } = useTransactions();
-
+  const { role, error: roleError } = useUserRole();
+  const { items, setItems, isLoading, error, setError, reload } = useTransactions();
   const isAdmin = role === 'admin';
 
   const { createTransaction, isSubmitting } = useCreateTransaction(
@@ -288,72 +296,92 @@ export default function IncomeAndExpenses() {
     setError
   );
 
-  const handleNewTransaction = async (data: FormData) => {
+  const handleNewTransaction = useCallback(async (data: FormData) => {
     const success = await createTransaction(data);
     if (success) {
       setShowForm(false);
     }
-  };
+  }, [createTransaction]);
 
-  const headerActions = useMemo(
-    () =>
-      isAdmin ? (
-        <Button onClick={() => setShowForm(true)} disabled={isLoading}>
-          <Plus className='mr-2 h-4 w-4' />
-          New
-        </Button>
-      ) : null,
-    [isAdmin, isLoading]
-  );
+  const handleOpenForm = useCallback(() => {
+    startTransition(() => {
+      setShowForm(true);
+    });
+  }, []);
+
+  const handleCloseForm = useCallback(() => {
+    startTransition(() => {
+      setShowForm(false);
+    });
+  }, []);
+
+  const handleRetry = useCallback(() => {
+    reload();
+  }, [reload]);
+
+  const tableData = useMemo(() => {
+    return items.map(item => ({
+      id: item.id,
+      concept: item.concept,
+      amount: item.amount,
+      date: new Date(item.date).toLocaleDateString('es-CO', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      }),
+      user: item.user?.name || item.user?.email || 'Unknown'
+    }));
+  }, [items]);
 
   return (
     <div className='h-full flex flex-col'>
-
-
-
-      <div className=' px-6    '>
-        <div className='flex items-end justify-end'>
-          <div className='cursor-pointer'>
-
-            <Avatar
-
-              initials={user?.name?.slice(0, 2).toUpperCase() || 'U'}
-              height={60}  // 48px = 12 en Tailwind (h-12 w-12)
-              width={60}
-              user={user}
-            />
-
+      {/* Mostrar errores de rol */}
+      {roleError && (
+        <div className='mx-6 mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg flex items-start gap-3'>
+          <AlertCircle className='w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5' />
+          <div className='flex-1'>
+            <p className='text-sm font-medium text-yellow-800'>Advertencia al obtener permisos</p>
+            <p className='text-sm text-yellow-700 mt-1'>{roleError}</p>
           </div>
-
-
-          {/* {headerActions} */}
         </div>
+      )}
 
-        {error && (
-          <div
-            role='alert'
-            className='mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700'
-          >
-            {error}
-          </div>
-        )}
-      </div>
-
-      <div className='flex-1 px-6 py-4 overflow-hidden'>
+      {/* Tabla de datos */}
+      <div className='flex-1 px-6 overflow-hidden'>
         <div className='w-full h-full'>
-          {/* CAMBIO: Usa el nuevo DataTable con las propiedades correctas */}
-          <DataTable
-            title='Income and Expenses'
-          // headerActions se maneja en el header principal, no aquí
-          />
+          {isLoading ? (
+            <div className='flex items-center justify-center h-full'>
+              <div className="animate-pulse">
+                <p className='text-gray-500'>Cargando...</p>
+              </div>
+            </div>
+          ) : error ? (
+            <div className='flex flex-col items-center justify-center h-full gap-4'>
+              <AlertCircle className='w-12 h-12 text-red-500' />
+              <div className='text-center'>
+                <p className='text-lg font-medium text-gray-900'>Error al cargar datos</p>
+                <p className='text-sm text-gray-600 mt-2'>{error}</p>
+              </div>
+              <Button onClick={handleRetry}>
+                Reintentar
+              </Button>
+            </div>
+          ) : (
+            <DataTable
+              title='Income and Expenses'
+              columns={columns}
+              data={tableData}
+            />
+          )}
         </div>
       </div>
 
+      {/* Modal de formulario */}
       {showForm && isAdmin && (
         <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
           <NewTransactionForm
             onSubmit={handleNewTransaction}
-            onCancel={() => setShowForm(false)}
+            onCancel={handleCloseForm}
             isLoading={isSubmitting}
           />
         </div>

@@ -99,13 +99,20 @@ const Home = () => {
                       src={f.image}
                       fill
                       sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
-                      className='object-cover transition-transform duration-700 ease-out group-hover:scale-110'
+                      className='object-cover transition-transform duration-700 ease-out group-hover:scale-110 bg-black/100'
                       priority
                       quality={90}
                     />
-                    
+
                     {/* Overlay oscuro que aparece en hover */}
-                    <div className='absolute inset-0 bg-black/0 group-hover:bg-black/60 transition-all duration-500 ease-out' />
+                    <div className='absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-all duration-500 ease-out' />
+
+                    {/* Ícono flotante con efectos mágicos */}
+                    <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out group-hover:scale-150 group-hover:-translate-y-20 group-hover:opacity-0 z-20'>
+                      <div className='bg-black/80 backdrop-blur-sm p-6 rounded-full shadow-2xl group-hover:shadow-white/50 transition-all duration-500'>
+                        {getIcon(f.iconType)}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Overlay de restricción */}

@@ -13,13 +13,14 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/router'; // Corregido: import correcto
-import { authClient } from '@/lib/auth-client'; // Corregido: usar client de Better Auth
+import { useRouter } from 'next/navigation';
+import { authClient } from '@/lib/auth-client';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const router = useRouter(); // Corregido: usar hook
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const router = useRouter();
 
   const menuItems = [
     {
@@ -31,15 +32,24 @@ export default function Sidebar() {
     { href: '/reports', label: 'Reports', icon: <ChartLine size={20} /> },
   ];
 
-  // Función de logout corregida
+  // Función de logout optimizada
   const handleLogout = async () => {
+    if (isLoggingOut) return; // Prevenir múltiples clicks
+    
+    setIsLoggingOut(true);
+
+    // Redirigir inmediatamente (navegación optimista)
+    router.push('/auth/login');
+
+    // Ejecutar logout en segundo plano
     try {
       await authClient.signOut();
-      // Redirigir al login después del logout
-      router.push('/auth/login');
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
-      // Opcional: mostrar mensaje de error al usuario
+      // Si falla, podrías revertir la navegación o mostrar error
+      // pero el usuario ya está en la página de login
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -111,8 +121,9 @@ export default function Sidebar() {
         {/* Footer */}
         <div className='absolute bottom-6 left-4 right-4'>
           <button
-            className='flex items-center px-3 py-2 rounded-lg text-gray-600 hover:text-red-500 hover:bg-gray-100 w-full min-w-0'
-            onClick={handleLogout} // Corregido: usar función handleLogout
+            className='flex items-center px-3 py-2 rounded-lg text-gray-600 hover:text-red-500 hover:bg-gray-100 w-full min-w-0 disabled:opacity-50 disabled:cursor-not-allowed'
+            onClick={handleLogout}
+            disabled={isLoggingOut}
           >
             <div
               className={`flex items-center w-full min-w-0 ${isOpen ? 'gap-3' : 'gap-0'}`}
@@ -124,7 +135,7 @@ export default function Sidebar() {
                 className={`transition-[opacity,max-width,margin] duration-300 overflow-hidden whitespace-nowrap min-w-0
                 ${isOpen ? 'opacity-100 max-w-[200px] ml-3' : 'opacity-0 max-w-0 ml-0 pointer-events-none'}`}
               >
-                Cerrar sesión
+                {isLoggingOut ? 'Cerrando...' : 'Cerrar sesión'}
               </span>
             </div>
           </button>

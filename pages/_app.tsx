@@ -7,6 +7,7 @@ import { Sidebar } from '@/components/ui';
 import { AuthProvider, useAuth } from '../context/auth-context';
 import '@/styles/globals.css';
 import Image from 'next/image';
+import { Avatar } from '@/features/profile/components/profileAvatar';
 
 type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -136,11 +137,31 @@ const Topbar = () => {
 };
 
 const AppLayout = ({ page }: { page: ReactElement }) => {
+
+  const { user } = useAuth()
   return (
     <div className='flex h-screen overflow-hidden'>
       <Sidebar /> {/* Aparecerá en todas las páginas que usen este layout */}
+
       <main className='flex-1  bg-gray-50  '>
-        <div className=' '>
+        <div >
+
+          <div className='flex items-center justify-end py-3 px-2'>
+
+
+            <Link href={'/profile'}>
+            <Avatar
+            
+              initials={user?.name?.slice(0, 2).toUpperCase() || 'U'}
+              height={40}  // 48px = 12 en Tailwind (h-12 w-12)
+              width={40}
+              user={user}
+            />
+            
+            </Link>
+
+
+          </div>
           {page}
         </div>
       </main>

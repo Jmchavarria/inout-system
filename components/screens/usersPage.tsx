@@ -7,7 +7,7 @@
 // IMPORTACIONES
 // ============================================================================
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 // Componentes específicos para manejo de usuarios
 import { createUserColumns, User, UserEditForm } from '@/components/users';
 // Componente de tabla de datos reutilizable
@@ -272,6 +272,15 @@ export default function UsersPage(): JSX.Element {
   // RENDERIZADO
   // ========================================================================
 
+  const columns = useMemo(() => [
+    { key: 'id', label: 'ID' },
+    { key: 'concept', label: 'Concept' },
+    { key: 'amount', label: 'Amount' },
+    { key: 'date', label: 'Date' },
+    { key: 'user', label: 'User' }
+  ], []);
+
+
   return (
     <div className='flex h-screen'>
       <div className='flex-1 overflow-auto p-6'>
@@ -281,7 +290,9 @@ export default function UsersPage(): JSX.Element {
         {/* Contenedor de la tabla */}
         <div className='max-w-7xl mx-auto'>
           <DataTable
-          title='Users'
+            columns={columns}
+            data={users}
+            title='Users'
           />
         </div>
 
