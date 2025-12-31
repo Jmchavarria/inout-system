@@ -34,6 +34,7 @@ export default function UsersPage() {
 <<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       <h1 className="text-3xl font-bold mb-4">Users</h1>
 >>>>>>> 67d3771 (New changes in dev)
@@ -42,6 +43,8 @@ export default function UsersPage() {
 =======
       <h1 className="text-3xl font-bold mb-4">Users</h1>
 >>>>>>> 41a978b (New changes in dev)
+=======
+>>>>>>> fc7574f (Cambios en users en home y en reports)
 
       <DataTable
         title="Users"
