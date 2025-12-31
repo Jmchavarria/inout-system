@@ -3,21 +3,7 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-  Button,
-  Input,
-} from '@/components/ui';
+
 
 const transactionSchema = z.object({
   concept: z
@@ -88,154 +74,9 @@ export default function NewTransactionForm({
 
   return (
     <div className='w-full max-w-xl mx-auto'>
-      <Card className=''>
-        <CardHeader className='pb-4'>
-          <CardTitle className='text-xl font-bold text-center text-gray-900'>
-            New Transaction
-          </CardTitle>
-        </CardHeader>
 
-        <CardContent className='px-8 pb-6'>
-          <Form {...form}>
-            <form
-              onSubmit={form.handleSubmit(handleSubmit)}
-              className='space-y-4'
-            >
-              {/* Primera fila: Concept (ocupa todo el ancho) */}
-              <FormField
-                control={form.control}
-                name='concept'
-                render={({ field }) => (
-                  <FormItem className='space-y-2'>
-                    <FormLabel className='text-sm font-medium text-gray-700'>
-                      Concept
-                    </FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder='Product sale, office supplies, consulting fee...'
-                        disabled={isLoading}
-                        className='h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500'
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription className='text-xs text-gray-500'>
-                      {form.formState.errors.concept ? (
-                        <FormMessage />
-                      ) : (
-                        'Briefly describe the transaction (3-100 characters)'
-                      )}
-                    </FormDescription>
-                  </FormItem>
-                )}
-              />
+      <div>New Transaction</div>
 
-              {/* Segunda fila: Amount y Date lado a lado */}
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                <FormField
-                  control={form.control}
-                  name='amount'
-                  render={({ field }) => (
-                    <FormItem className='space-y-2'>
-                      <FormLabel className='text-sm font-medium text-gray-700'>
-                        Amount
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='text'
-                          placeholder='850000 or -320000'
-                          disabled={isLoading}
-                          className='h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500 font-mono'
-                          {...field}
-                          onChange={(e) => {
-                            const value = e.target.value.replace(
-                              /[^-0-9.]/g,
-                              ''
-                            );
-                            field.onChange(value);
-                          }}
-                        />
-                      </FormControl>
-                      <FormDescription className='text-xs text-gray-500'>
-                        {form.formState.errors.amount ? (
-                          <FormMessage />
-                        ) : (
-                          'Positive for income, negative for expenses'
-                        )}
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name='date'
-                  render={({ field }) => (
-                    <FormItem className='space-y-2'>
-                      <FormLabel className='text-sm font-medium text-gray-700'>
-                        Date
-                      </FormLabel>
-                      <FormControl>
-                        <Input
-                          type='date'
-                          disabled={isLoading}
-                          className='h-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500'
-                          max={new Date().toISOString().split('T')[0]}
-                          min={
-                            new Date(
-                              new Date().setFullYear(
-                                new Date().getFullYear() - 1
-                              )
-                            )
-                              .toISOString()
-                              .split('T')[0]
-                          }
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormDescription className='text-xs text-gray-500'>
-                        {form.formState.errors.date ? (
-                          <FormMessage />
-                        ) : (
-                          'Within the last year'
-                        )}
-                      </FormDescription>
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              {/* Botones */}
-              <div className='flex justify-center gap-4 pt-4'>
-                {onCancel && (
-                  <Button
-                    type='button'
-                    variant='outline'
-                    onClick={handleCancel}
-                    disabled={isLoading}
-                    className='w-32 h-10 border-gray-200 hover:bg-gray-50 text-gray-700'
-                  >
-                    Cancel
-                  </Button>
-                )}
-                <Button
-                  type='submit'
-                  disabled={isLoading || !form.formState.isValid}
-                  className='w-40 h-10'
-                >
-                  {isLoading ? (
-                    <div className='flex items-center'>
-                      <div className='w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2' />
-                      Processing...
-                    </div>
-                  ) : (
-                    'Create transaction'
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
     </div>
   );
 }

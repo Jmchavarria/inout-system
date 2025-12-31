@@ -1,5 +1,4 @@
-import UserEditForm from './userForm';
-import { User, createUserColumns } from '../users/columns';
+import { User, columns  } from '../users/columns';
 
-export { UserEditForm, createUserColumns };
+export {  columns };
 export type { User };

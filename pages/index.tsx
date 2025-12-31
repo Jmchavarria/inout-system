@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import {
-  ArrowRight,
   BarChart3,
   Users2,
   CircleDollarSign,
@@ -80,67 +79,73 @@ const Home = () => {
   };
 
   return (
-    <div>
-      <div className='border-black'>
-        <div className='w-full'>
-          <div className='grid sm:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3'>
-            {features.map((f) => {
-              const isRestricted = f.restricted && role === 'user';
-              return (
-                <div
-                  key={f.title}
-                  className='group h-screen bg-white relative overflow-hidden cursor-pointer'
-                >
-                  {/* Contenedor de imagen con efecto hover */}
-                  <div className='absolute inset-0'>
-                    {/* Imagen con scale en hover */}
-                    <Image
-                      alt={f.alt}
-                      src={f.image}
-                      fill
-                      sizes='(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw'
-                      className='object-cover transition-transform duration-700 ease-out group-hover:scale-110 bg-black/100'
-                      priority
-                      quality={90}
-                    />
+    <div className='p-6'>
+      <div className='max-w-7xl mx-auto'>
+        <div className='grid sm:grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3'>
+          {features.map((f) => {
+            const isRestricted = f.restricted && role === 'user';
 
-                    {/* Overlay oscuro que aparece en hover */}
-                    <div className='absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-all duration-500 ease-out' />
-
-                    {/* Ícono flotante con efectos mágicos */}
-                    <div className='absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all duration-700 ease-out group-hover:scale-150 group-hover:-translate-y-20 group-hover:opacity-0 z-20'>
-                      <div className='bg-black/80 backdrop-blur-sm p-6 rounded-full shadow-2xl group-hover:shadow-white/50 transition-all duration-500'>
-                        {getIcon(f.iconType)}
-                      </div>
+            return (
+              <div
+                key={f.title}
+                className='relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer group'
+              >
+                {isRestricted ? (
+                  <>
+                    {/* Imagen */}
+                    <div className='relative h-48 w-full overflow-hidden'>
+                      <Image
+                        alt={f.alt}
+                        width={400}
+                        height={300}
+                        src={f.image}
+                        className='object-cover w-full h-full'
+                        quality={90}
+                      />
                     </div>
-                  </div>
 
-                  {/* Overlay de restricción */}
-                  {isRestricted && (
+                    {/* Contenido */}
+                    <div className='p-6'>
+                      <div className='flex items-center gap-3 mb-3'>
+                        {getIcon(f.iconType)}
+                        <h3 className='text-lg font-semibold text-gray-900'>{f.title}</h3>
+                      </div>
+                      <p className='text-sm text-gray-600 leading-relaxed'>{f.desc}</p>
+                    </div>
+
+                    {/* Overlay de restricción */}
                     <div className='absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center text-gray-600'>
                       <Lock className='w-12 h-12 mb-2' />
                       <p className='font-medium'>Restricted for your role</p>
                     </div>
-                  )}
-
-                  {/* Contenido que aparece en hover */}
-                  {!isRestricted && (
-                    <div className='absolute inset-0 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 ease-out z-10'>
-                      <h3 className='text-white text-2xl font-bold mb-4 px-4 text-center drop-shadow-lg'>
-                        {f.title}
-                      </h3>
-                      <Link href={f.route}>
-                        <button className='bg-white text-gray-900 px-6 py-3 rounded-lg shadow-lg inline-flex items-center gap-2 text-base font-medium hover:bg-gray-100 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 ease-out'>
-                          Access
-                          <ArrowRight className='w-5 h-5' />
-                        </button>
-                      </Link>
+                  </>
+                ) : (
+                  <Link href={f.route} className='block h-full'>
+                    {/* Imagen */}
+                    <div className='relative h-48 w-full overflow-hidden'>
+                      <Image
+                        alt={f.alt}
+                        width={400}
+                        height={300}
+                        src={f.image}
+                        className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
+                        quality={90}
+                      />
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+
+                    {/* Contenido */}
+                    <div className='p-6'>
+                      <div className='flex items-center gap-3 mb-3'>
+                        {getIcon(f.iconType)}
+                        <h3 className='text-lg font-semibold text-gray-900'>{f.title}</h3>
+                      </div>
+                      <p className='text-sm text-gray-600 leading-relaxed'>{f.desc}</p>
+                    </div>
+                  </Link>
+                )}
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>

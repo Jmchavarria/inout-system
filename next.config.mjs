@@ -2,12 +2,11 @@
 const nextConfig = {
   reactStrictMode: true,
 
-  eslint: {
-    // Permite compilar aunque ESLint marque errores
-    ignoreDuringBuilds: true,
-  },
-  images: {
+ 
 
+  images: {
+    // ✅ Añade las calidades que usas en tus componentes Image
+    qualities: [75, 90],
     
     remotePatterns: [
       {
@@ -27,12 +26,11 @@ const nextConfig = {
     // Alternativamente, puedes usar la configuración legacy (menos segura):
     // domains: ['avatars.githubusercontent.com', 'github.com'],
   },
+
   // Otras configuraciones que puedas tener...
   experimental: {
-
-    
     // Cualquier configuración experimental
   },
-}
+};
 
 export default nextConfig;

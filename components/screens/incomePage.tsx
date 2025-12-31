@@ -5,7 +5,6 @@ import { useEffect, useMemo, useState, useCallback, useTransition } from 'react'
 import { Plus, AlertCircle } from 'lucide-react';
 import { DataTable } from '../dataTable';
 import { NewTransactionForm, type Income } from '@/components/income';
-import { Button } from '@/components/ui';
 
 // ============================================================================
 // DEFINICIÓN DE TIPOS
@@ -362,9 +361,9 @@ export default function IncomeAndExpenses() {
                 <p className='text-lg font-medium text-gray-900'>Error al cargar datos</p>
                 <p className='text-sm text-gray-600 mt-2'>{error}</p>
               </div>
-              <Button onClick={handleRetry}>
+              <button onClick={handleRetry}>
                 Reintentar
-              </Button>
+              </button>
             </div>
           ) : (
             <DataTable

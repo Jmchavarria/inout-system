@@ -9,7 +9,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 // Componentes específicos para manejo de usuarios
-import { createUserColumns, User, UserEditForm } from '@/components/users';
+import { User } from '@/components/users';
 // Componente de tabla de datos reutilizable
 import { DataTable } from '../dataTable';
 
@@ -266,7 +266,7 @@ export default function UsersPage(): JSX.Element {
   // ========================================================================
 
   // Crea las columnas de la tabla pasando la función de edición
-  const userColumns = createUserColumns(handleEdit);
+
 
   // ========================================================================
   // RENDERIZADO
@@ -274,10 +274,9 @@ export default function UsersPage(): JSX.Element {
 
   const columns = useMemo(() => [
     { key: 'id', label: 'ID' },
-    { key: 'concept', label: 'Concept' },
-    { key: 'amount', label: 'Amount' },
-    { key: 'date', label: 'Date' },
-    { key: 'user', label: 'User' }
+    { key: 'email', label: 'Email' },
+    { key: 'name', label: 'Name' },
+    { key: 'role', label: 'Role' },
   ], []);
 
 
@@ -299,20 +298,9 @@ export default function UsersPage(): JSX.Element {
         {/* Modal con formulario de usuario */}
         {showForm && (
           <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-            <UserEditForm
-              key={editingUser?.email ?? 'new'}  // Key única para re-renderizar
-              onSubmit={handleUserSubmit}        // Handler de envío
-              onCancel={handleCancel}            // Handler de cancelación
-              isLoading={isLoading}              // Estado de loading para deshabilitar
-              editingUser={
-                editingUser
-                  ? {
-                    name: editingUser.name ?? '',           // Nombre actual o vacío
-                    role: normalizeRole(editingUser.role),  // Rol normalizado
-                  }
-                  : null // null indica modo creación
-              }
-            />
+           {/* 
+           
+           aca debe ir el formulario para editar el usuario. */}
           </div>
         )}
       </div>

@@ -1,14 +1,6 @@
 'use client';
 
-import { ColumnDef } from '@tanstack/react-table';
-import { ArrowUpDown, MoreHorizontal } from 'lucide-react';
-import {
-  Button,
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui';
+import { ArrowUpDown, Pencil } from 'lucide-react';
 
 export type Income = {
   id: string;
@@ -18,32 +10,26 @@ export type Income = {
   user: { id: string; name: string; email: string };
 };
 
-// Función para manejar las acciones de edición
-const handleEditAction = (income: Income) => {
-  // Aquí puedes implementar la lógica de edición
-  // Por ejemplo, abrir un modal, navegar a una página de edición, etc.
-  console.warn('Edit action for income:', income.id, income.concept);
-};
-
-export const columns: ColumnDef<Income>[] = [
+// Función para crear las columnas con callbacks
+export const columns = (onEdit: (income: Income) => void) => [
   {
     accessorKey: 'concept',
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       return (
-        <Button
-          variant='ghost'
+        <button
+          className='flex items-center hover:bg-gray-100 px-3 py-2 rounded'
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Concept
           <ArrowUpDown className='ml-2 h-4 w-4' />
-        </Button>
+        </button>
       );
     },
   },
   {
     accessorKey: 'amount',
     header: 'Amount',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const amount = row.getValue('amount') as number;
       const formattedAmount = new Intl.NumberFormat('es-CO', {
         style: 'currency',
@@ -62,16 +48,16 @@ export const columns: ColumnDef<Income>[] = [
   {
     accessorKey: 'date',
     header: 'Date',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const date = row.getValue('date') as string;
       return new Date(date).toLocaleDateString('es-CO');
     },
   },
   {
-    accessorFn: (row) => `${row.user.name} ${row.user.email}`,
+    accessorFn: (row: Income) => `${row.user.name} ${row.user.email}`,
     id: 'user',
     header: 'User',
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const user = row.original.user;
       return (
         <div className='flex flex-col'>
@@ -84,29 +70,19 @@ export const columns: ColumnDef<Income>[] = [
   {
     id: 'action',
     header: 'Action',
-    cell: ({ row }) => {
+    enableGlobalFilter: false,
+    cell: ({ row }: any) => {
+      const income = row.original;
+      
       return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant='ghost' className='h-8 w-8 p-0'>
-              <span className='sr-only'>Open menu</span>
-              <MoreHorizontal className='h-4 w-4' />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align='end'>
-            <DropdownMenuItem onClick={() => handleEditAction(row.original)}>
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={() =>
-                console.warn('Delete action for income:', row.original.id)
-              }
-              className='text-red-600'
-            >
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        <button
+          className='h-8 w-8 p-0 flex items-center justify-center hover:bg-gray-100 rounded'
+          onClick={() => onEdit(income)}
+          aria-label='Edit income'
+          title='Edit'
+        >
+          <Pencil className='h-4 w-4' />
+        </button>
       );
     },
   },

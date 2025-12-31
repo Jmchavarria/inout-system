@@ -1,12 +1,12 @@
-// middleware.ts
+// proxy.ts
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 
-// 👇 Fuerza a que este middleware se ejecute en runtime Node.js
-export const runtime = 'nodejs';
+// ❌ ELIMINA ESTA LÍNEA - No se permite en proxy
+// export const runtime = 'nodejs';
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   try {
     // 📌 Obtenemos la sesión desde auth
     const session = await auth.api.getSession({ headers: req.headers });
@@ -29,7 +29,7 @@ export async function middleware(req: NextRequest) {
     // ✅ Permitir acceso normal
     return NextResponse.next();
   } catch (err) {
-    console.error('❌ [middleware] Error en auth check:', err);
+    console.error('❌ [proxy] Error en auth check:', err);
 
     // fallback → redirigir al login si algo falla
     const loginUrl = new URL('/auth/login', req.url);
@@ -37,7 +37,7 @@ export async function middleware(req: NextRequest) {
   }
 }
 
-// 📌 Configuración CORREGIDA - excluye también /images/
+// 📌 Configuración - excluye también /images/
 export const config = {
   matcher: [
     '/((?!_next/static|_next/image|favicon.ico|api|images).*)'
