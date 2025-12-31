@@ -74,10 +74,15 @@ const Home = () => {
       case 'dollar':
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
         return <CircleDollarSign {...iconProps} className='w-7 h-7 text-emerald-600' />;
+=======
+        return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
+>>>>>>> bb0b039 (Nuevos cambios en el home)
       case 'users':
-        return <Users2 {...iconProps} className='w-7 h-7 text-blue-600' />;
+        return <Users2 className="w-7 h-7 text-blue-600" />;
       case 'chart':
+<<<<<<< HEAD
         return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
 =======
         return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
@@ -93,6 +98,9 @@ const Home = () => {
 =======
         return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
 >>>>>>> 67d3771 (New changes in dev)
+=======
+        return <BarChart3 className="w-7 h-7 text-purple-600" />;
+>>>>>>> bb0b039 (Nuevos cambios en el home)
     }
   }, []);
 
@@ -118,6 +126,7 @@ const Home = () => {
                         height={300}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 67d3771 (New changes in dev)
                         src={f.image}
@@ -130,6 +139,9 @@ const Home = () => {
 >>>>>>> c7b1863 (Nuevos cambios en el home)
 =======
 >>>>>>> 67d3771 (New changes in dev)
+=======
+                        className="object-cover w-full h-full"
+>>>>>>> bb0b039 (Nuevos cambios en el home)
                       />
                     </div>
 
@@ -158,6 +170,7 @@ const Home = () => {
                         height={300}
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 >>>>>>> 67d3771 (New changes in dev)
                         src={f.image}
@@ -170,6 +183,9 @@ const Home = () => {
 >>>>>>> c7b1863 (Nuevos cambios en el home)
 =======
 >>>>>>> 67d3771 (New changes in dev)
+=======
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+>>>>>>> bb0b039 (Nuevos cambios en el home)
                       />
                     </div>
 
