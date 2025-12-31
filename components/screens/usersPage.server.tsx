@@ -33,11 +33,15 @@ export default function UsersPage() {
     <div className="p-6">
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
       <h1 className="text-3xl font-bold mb-4">Users</h1>
 >>>>>>> 67d3771 (New changes in dev)
 =======
 >>>>>>> 0ed0a5a (Cambios en users en home y en reports)
+=======
+      <h1 className="text-3xl font-bold mb-4">Users</h1>
+>>>>>>> 41a978b (New changes in dev)
 
       <DataTable
         title="Users"
