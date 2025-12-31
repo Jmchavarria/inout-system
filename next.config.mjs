@@ -20,9 +20,12 @@ const nextConfig = {
   },
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
   // Quita el bloque experimental ya que Next.js 14 no necesita turbo: false
 >>>>>>> c7b1863 (Nuevos cambios en el home)
+=======
+>>>>>>> 67d3771 (New changes in dev)
 };
 
 export default nextConfig;

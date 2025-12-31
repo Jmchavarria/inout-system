@@ -73,6 +73,7 @@ const Home = () => {
     switch (iconType) {
       case 'dollar':
 <<<<<<< HEAD
+<<<<<<< HEAD
         return <CircleDollarSign {...iconProps} className='w-7 h-7 text-emerald-600' />;
       case 'users':
         return <Users2 {...iconProps} className='w-7 h-7 text-blue-600' />;
@@ -80,11 +81,18 @@ const Home = () => {
         return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
 =======
         return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
+=======
+        return <CircleDollarSign {...iconProps} className='w-7 h-7 text-emerald-600' />;
+>>>>>>> 67d3771 (New changes in dev)
       case 'users':
-        return <Users2 className="w-7 h-7 text-blue-600" />;
+        return <Users2 {...iconProps} className='w-7 h-7 text-blue-600' />;
       case 'chart':
+<<<<<<< HEAD
         return <BarChart3 className="w-7 h-7 text-purple-600" />;
 >>>>>>> c7b1863 (Nuevos cambios en el home)
+=======
+        return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
+>>>>>>> 67d3771 (New changes in dev)
     }
   }, []);
 
@@ -109,13 +117,19 @@ const Home = () => {
                         width={400}
                         height={300}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 67d3771 (New changes in dev)
                         src={f.image}
                         className='object-cover w-full h-full'
                         quality={75}
                         priority={false}
+<<<<<<< HEAD
 =======
                         className="object-cover w-full h-full"
 >>>>>>> c7b1863 (Nuevos cambios en el home)
+=======
+>>>>>>> 67d3771 (New changes in dev)
                       />
                     </div>
 
@@ -143,13 +157,19 @@ const Home = () => {
                         width={400}
                         height={300}
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> 67d3771 (New changes in dev)
                         src={f.image}
                         className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
                         quality={75}
                         priority={false}
+<<<<<<< HEAD
 =======
                         className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
 >>>>>>> c7b1863 (Nuevos cambios en el home)
+=======
+>>>>>>> 67d3771 (New changes in dev)
                       />
                     </div>
 

@@ -31,6 +31,10 @@ export default function UsersPage() {
 
   return (
     <div className="p-6">
+<<<<<<< HEAD
+=======
+      <h1 className="text-3xl font-bold mb-4">Users</h1>
+>>>>>>> 67d3771 (New changes in dev)
 
       <DataTable
         title="Users"
