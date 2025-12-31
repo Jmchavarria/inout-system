@@ -3,15 +3,6 @@
 // npm i xlsx
 import * as XLSX from 'xlsx';
 import { useEffect, useMemo, useState } from 'react';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-  Button,
-  ChartAreaInteractive,
-  ChartPoint,
-} from '@/components/ui';
 import { Download, TrendingUp, TrendingDown, DollarSign } from 'lucide-react';
 
 interface TxUser {
@@ -28,6 +19,13 @@ interface Tx {
   user: TxUser;
 }
 
+interface ChartPoint {
+  date: string;
+  income: number;
+  expenses: number;
+  balance: number;
+}
+
 // Helpers fecha (LOCAL)
 const parseLocalYmd = (ymd: string): Date => {
   const [y, m, d] = ymd.split('-').map(Number);
@@ -39,6 +37,119 @@ const ymd = (d: Date): string => {
   const m = String(d.getMonth() + 1).padStart(2, '0');
   const dd = String(d.getDate()).padStart(2, '0');
   return `${y}-${m}-${dd}`;
+};
+
+// Simple Button Component
+const Button = ({ onClick, className, disabled, children }: any) => (
+  <button
+    onClick={onClick}
+    disabled={disabled}
+    className={`inline-flex items-center px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
+  >
+    {children}
+  </button>
+);
+
+// Simple Card Components
+const Card = ({ children, className = '' }: any) => (
+  <div className={`bg-white rounded-lg border border-gray-200 shadow-sm ${className}`}>
+    {children}
+  </div>
+);
+
+const CardHeader = ({ children, className = '' }: any) => (
+  <div className={`p-6 ${className}`}>
+    {children}
+  </div>
+);
+
+const CardTitle = ({ children, className = '' }: any) => (
+  <h3 className={className}>
+    {children}
+  </h3>
+);
+
+const CardContent = ({ children, className = '' }: any) => (
+  <div className={`p-6 pt-0 ${className}`}>
+    {children}
+  </div>
+);
+
+// Simple Chart Component
+const ChartAreaInteractive = ({ data, isLoading }: { data: ChartPoint[], isLoading: boolean }) => {
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Balance Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            Loading chart data...
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (data.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold">Balance Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 flex items-center justify-center text-gray-500">
+            No data available
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const maxVal = Math.max(...data.map(d => Math.max(d.income, d.expenses, Math.abs(d.balance))));
+  const minBalance = Math.min(...data.map(d => d.balance));
+  const chartHeight = 200;
+
+  const getY = (val: number) => {
+    const range = maxVal - minBalance;
+    return chartHeight - ((val - minBalance) / range) * chartHeight;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg font-semibold">Balance Over Time (Last 90 Days)</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="w-full overflow-x-auto">
+          <svg width="100%" height={chartHeight + 40} className="min-w-[600px]">
+            {/* Balance Line */}
+            <polyline
+              points={data.map((d, i) => `${(i / (data.length - 1)) * 100}%,${getY(d.balance)}`).join(' ')}
+              fill="none"
+              stroke="#2563eb"
+              strokeWidth="2"
+            />
+            
+            {/* Labels */}
+            <text x="0" y={chartHeight + 30} className="text-xs fill-gray-600">
+              {data[0]?.date}
+            </text>
+            <text x="95%" y={chartHeight + 30} className="text-xs fill-gray-600 text-right">
+              {data[data.length - 1]?.date}
+            </text>
+          </svg>
+        </div>
+        <div className="mt-4 flex gap-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 bg-blue-600 rounded-full"></div>
+            <span>Balance</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
 };
 
 export default function ReportsPage(): JSX.Element {
@@ -68,7 +179,7 @@ export default function ReportsPage(): JSX.Element {
             id: String(transaction.id),
             concept: String(transaction.concept ?? ''),
             amount: Number(transaction.amount ?? 0),
-            date: String(transaction.date ?? '').slice(0, 10), // YYYY-MM-DD (string)
+            date: String(transaction.date ?? '').slice(0, 10),
             user: {
               id: String(
                 (transaction.user as Record<string, unknown>)?.id ?? ''
@@ -152,7 +263,7 @@ export default function ReportsPage(): JSX.Element {
     return out;
   }, [txs]);
 
-  // Densificar últimos N días para que siempre se lea bien
+  // Densificar últimos N días
   const DENSE_DAYS = 90;
   const chartData = useMemo<ChartPoint[]>(() => {
     if (aggregatedByDay.length === 0) {
@@ -195,7 +306,7 @@ export default function ReportsPage(): JSX.Element {
     return dense;
   }, [aggregatedByDay]);
 
-  // ---------- Descargar Excel (3 hojas) ----------
+  // Descargar Excel
   const downloadExcel = (): void => {
     const wb = XLSX.utils.book_new();
 
@@ -213,7 +324,6 @@ export default function ReportsPage(): JSX.Element {
     const wsKpi = XLSX.utils.aoa_to_sheet(kpiData);
     wsKpi['!cols'] = [{ wch: 22 }, { wch: 18 }];
 
-    // formato moneda
     ['B2', 'B3', 'B4'].forEach((addr) => {
       if (wsKpi[addr]) {
         wsKpi[addr].z = '"$"#,##0';
@@ -222,7 +332,7 @@ export default function ReportsPage(): JSX.Element {
 
     XLSX.utils.book_append_sheet(wb, wsKpi, 'KPIs');
 
-    // Hoja 2: Resumen diario (gráfica)
+    // Hoja 2: Resumen diario
     const dailyAoA = [
       ['Date', 'Income', 'Expenses', 'Balance'],
       ...chartData.map((r) => [
@@ -238,23 +348,12 @@ export default function ReportsPage(): JSX.Element {
     wsDaily['!autofilter'] = { ref: `A1:D${dailyAoA.length}` };
 
     for (let r = 2; r <= dailyAoA.length; r++) {
-      const A = `A${r}`;
-      const B = `B${r}`;
-      const C = `C${r}`;
-      const D = `D${r}`;
-
-      if (wsDaily[A]) {
-        wsDaily[A].z = 'dd/mm/yyyy';
-      }
-      if (wsDaily[B]) {
-        wsDaily[B].z = '"$"#,##0';
-      }
-      if (wsDaily[C]) {
-        wsDaily[C].z = '"$"#,##0';
-      }
-      if (wsDaily[D]) {
-        wsDaily[D].z = '"$"#,##0';
-      }
+      ['A', 'B', 'C', 'D'].forEach((col, i) => {
+        const cell = `${col}${r}`;
+        if (wsDaily[cell]) {
+          wsDaily[cell].z = i === 0 ? 'dd/mm/yyyy' : '"$"#,##0';
+        }
+      });
     }
 
     XLSX.utils.book_append_sheet(wb, wsDaily, 'Resumen diario');
@@ -284,15 +383,8 @@ export default function ReportsPage(): JSX.Element {
     wsTx['!autofilter'] = { ref: `A1:F${txAoA.length}` };
 
     for (let r = 2; r <= txAoA.length; r++) {
-      const A = `A${r}`;
-      const C = `C${r}`;
-
-      if (wsTx[A]) {
-        wsTx[A].z = 'dd/mm/yyyy';
-      }
-      if (wsTx[C]) {
-        wsTx[C].z = '"$"#,##0';
-      }
+      if (wsTx[`A${r}`]) wsTx[`A${r}`].z = 'dd/mm/yyyy';
+      if (wsTx[`C${r}`]) wsTx[`C${r}`].z = '"$"#,##0';
     }
 
     XLSX.utils.book_append_sheet(wb, wsTx, 'Transacciones');
@@ -313,7 +405,7 @@ export default function ReportsPage(): JSX.Element {
   const expenseTransactions = txs.filter((t) => t.amount < 0);
 
   return (
-    <div className='h-screen'>
+    <div className='h-screen bg-gray-50'>
       <div className='flex-1 overflow-auto p-6'>
         <div className='max-w-7xl mx-auto space-y-6'>
           {/* Header */}
@@ -323,7 +415,7 @@ export default function ReportsPage(): JSX.Element {
             </h1>
             <Button
               onClick={downloadExcel}
-              className='bg-green-600 hover:bg-green-700'
+              className='bg-green-600 hover:bg-green-700 text-white'
               disabled={isLoading || Boolean(error)}
             >
               <Download className='mr-2 h-4 w-4' />
@@ -355,7 +447,7 @@ export default function ReportsPage(): JSX.Element {
                   {saldoActual >= 0 ? '+' : ''}
                   {formatCurrency(saldoActual)}
                 </div>
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-xs text-gray-500'>
                   {isLoading
                     ? 'Loading...'
                     : saldoActual >= 0
@@ -377,7 +469,7 @@ export default function ReportsPage(): JSX.Element {
                 <div className='text-2xl font-bold text-green-600'>
                   +{formatCurrency(totalIngresos)}
                 </div>
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-xs text-gray-500'>
                   {isLoading
                     ? 'Loading...'
                     : `From ${incomeTransactions.length} income transactions`}
@@ -396,7 +488,7 @@ export default function ReportsPage(): JSX.Element {
                 <div className='text-2xl font-bold text-red-600'>
                   -{formatCurrency(totalEgresosAbs)}
                 </div>
-                <p className='text-xs text-muted-foreground'>
+                <p className='text-xs text-gray-500'>
                   {isLoading
                     ? 'Loading...'
                     : `From ${expenseTransactions.length} expense transactions`}
