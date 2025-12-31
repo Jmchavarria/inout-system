@@ -72,11 +72,11 @@ const Home = () => {
     
     switch (iconType) {
       case 'dollar':
-        return <CircleDollarSign {...iconProps} className='w-7 h-7 text-emerald-600' />;
+        return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
       case 'users':
-        return <Users2 {...iconProps} className='w-7 h-7 text-blue-600' />;
+        return <Users2 className="w-7 h-7 text-blue-600" />;
       case 'chart':
-        return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
+        return <BarChart3 className="w-7 h-7 text-purple-600" />;
     }
   }, []);
 
@@ -100,10 +100,7 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
-                        className='object-cover w-full h-full'
-                        quality={75}
-                        priority={false}
+                        className="object-cover w-full h-full"
                       />
                     </div>
 
@@ -130,10 +127,7 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
-                        className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
-                        quality={75}
-                        priority={false}
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
                       />
                     </div>
 
