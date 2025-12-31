@@ -2,7 +2,7 @@
 'use client';
 
 import { useEffect, useMemo, useState, useCallback, useTransition } from 'react';
-import { Plus, AlertCircle } from 'lucide-react';
+import { AlertCircle } from 'lucide-react';
 import { DataTable } from '../dataTable';
 import { NewTransactionForm, type Income } from '@/components/income';
 
@@ -72,10 +72,10 @@ function normalizeIncome(t: IncomeApi): Income {
 
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   console.log(`🔄 Fetching: ${url}`);
-  
+
   try {
     const response = await fetch(url, init);
-    
+
     console.log(`📡 Response status for ${url}:`, response.status);
 
     if (!response.ok) {
@@ -91,7 +91,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
         const text = await response.text();
         console.error(`❌ Error response text:`, text);
       }
-      
+
       console.error(`❌ Request failed for ${url}:`, message);
       throw new Error(message);
     }
@@ -99,7 +99,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
     const data = await response.json();
     console.log(`✅ Success for ${url}:`, data);
     return data as T;
-    
+
   } catch (error) {
     console.error(`❌ Fetch error for ${url}:`, error);
     throw error;
@@ -127,7 +127,7 @@ const useUserRole = () => {
         setError(null);
       } catch (e) {
         if (e instanceof DOMException && e.name === 'AbortError') return;
-        
+
         const errorMsg = e instanceof Error ? e.message : 'Error al obtener rol';
         console.error('❌ Error fetching user role:', errorMsg);
         setError(errorMsg);
@@ -224,7 +224,7 @@ const useCreateTransaction = (
         date: payload.date,
         user: { id: '', name: 'You', email: '' }
       };
-      
+
       setItems((prevItems) => [tempTransaction, ...prevItems]);
 
       const createdTransaction = await fetchJSON<CreateIncomeResponse>(
@@ -240,8 +240,8 @@ const useCreateTransaction = (
       const normalizedTransaction = normalizeIncome(createdTransaction);
 
       // Reemplazar el temporal con el real
-      setItems((prevItems) => 
-        prevItems.map(item => 
+      setItems((prevItems) =>
+        prevItems.map(item =>
           item.id === tempId ? normalizedTransaction : item
         )
       );
@@ -250,10 +250,10 @@ const useCreateTransaction = (
 
     } catch (e: unknown) {
       // Revertir el optimistic update
-      setItems((prevItems) => 
+      setItems((prevItems) =>
         prevItems.filter(item => !item.id.toString().startsWith('temp-'))
       );
-      
+
       const errorMessage = e instanceof Error
         ? e.message
         : 'No se pudo crear la transacción';
