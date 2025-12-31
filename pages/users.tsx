@@ -1,5 +1,5 @@
-import { withPageAuth } from '@/lib/withPageAuth';
-import UsersPage from '@/components/screens/usersPage';
+import UsersPage from "@/components/screens/usersPage.server"
 
-export const getServerSideProps = withPageAuth(['admin']);
-export default UsersPage;
+export default function Users() {
+  return <UsersPage />
+}

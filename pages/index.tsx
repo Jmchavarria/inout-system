@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import {
   BarChart3,
   Users2,
@@ -37,10 +37,10 @@ const Home = () => {
     fetchRole();
   }, []);
 
-  const features: Feature[] = [
+  const features: Feature[] = useMemo(() => [
     {
       title: 'Income & Expense Management System',
-      desc: 'Record, classify, and reconcile your transactions in seconds. Get a clear view of your cash flow to maintain precise control of all your companys financial operations.',
+      desc: 'Record, classify, and reconcile your transactions in seconds. Get a clear view of your cash flow to maintain precise control of all your company\'s financial operations.',
       iconType: 'dollar',
       route: '/income',
       restricted: false,
@@ -65,18 +65,20 @@ const Home = () => {
       image: '/images/features/reports.jpeg',
       alt: 'Reports and analytics',
     },
-  ];
+  ], []);
 
-  const getIcon = (iconType: Feature['iconType']) => {
+  const getIcon = useCallback((iconType: Feature['iconType']) => {
+    const iconProps = { className: 'w-7 h-7', 'aria-hidden': true as const };
+    
     switch (iconType) {
       case 'dollar':
-        return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
+        return <CircleDollarSign {...iconProps} className='w-7 h-7 text-emerald-600' />;
       case 'users':
-        return <Users2 className="w-7 h-7 text-blue-600" />;
+        return <Users2 {...iconProps} className='w-7 h-7 text-blue-600' />;
       case 'chart':
-        return <BarChart3 className="w-7 h-7 text-purple-600" />;
+        return <BarChart3 {...iconProps} className='w-7 h-7 text-purple-600' />;
     }
-  };
+  }, []);
 
   return (
     <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
@@ -98,7 +100,10 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        className="object-cover w-full h-full"
+                        src={f.image}
+                        className='object-cover w-full h-full'
+                        quality={75}
+                        priority={false}
                       />
                     </div>
 
@@ -125,7 +130,10 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
+                        src={f.image}
+                        className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
+                        quality={75}
+                        priority={false}
                       />
                     </div>
 

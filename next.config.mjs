@@ -15,11 +15,10 @@ const nextConfig = {
         hostname: 'github.com',
         port: '',
         pathname: '/**',
-      }
+      },
     ],
   },
 
-  // Quita el bloque experimental ya que Next.js 14 no necesita turbo: false
 };
 
 export default nextConfig;
