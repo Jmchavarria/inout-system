@@ -15,7 +15,7 @@ export type User = {
 export const columns = (onEdit: (user: User) => void) => [
   {
     accessorKey: 'name',
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       return (
         <button
           className='flex items-center hover:bg-gray-100 px-3 py-2 rounded'
@@ -29,7 +29,7 @@ export const columns = (onEdit: (user: User) => void) => [
   },
   {
     accessorKey: 'email',
-    header: ({ column }) => {
+    header: ({ column }: any) => {
       return (
         <button
           className='flex items-center hover:bg-gray-100 px-3 py-2 rounded'
@@ -49,7 +49,7 @@ export const columns = (onEdit: (user: User) => void) => [
     id: 'action',
     header: 'Action',
     enableGlobalFilter: false,
-    cell: ({ row }) => {
+    cell: ({ row }: any) => {
       const user = row.original;
 
       return (
