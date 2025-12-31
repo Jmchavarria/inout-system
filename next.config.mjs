@@ -15,24 +15,16 @@ const nextConfig = {
         hostname: 'github.com',
         port: '',
         pathname: '/**',
-      },
+      }
     ],
+    // Alternativamente, puedes usar la configuración legacy (menos segura):
+    // domains: ['avatars.githubusercontent.com', 'github.com'],
   },
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  // Quita el bloque experimental ya que Next.js 14 no necesita turbo: false
->>>>>>> c7b1863 (Nuevos cambios en el home)
-=======
->>>>>>> 67d3771 (New changes in dev)
-=======
-  // Quita el bloque experimental ya que Next.js 14 no necesita turbo: false
->>>>>>> bb0b039 (Nuevos cambios en el home)
-=======
->>>>>>> 41a978b (New changes in dev)
+  // Otras configuraciones que puedas tener...
+  experimental: {
+    // Cualquier configuración experimental
+  },
 };
 
 export default nextConfig;
