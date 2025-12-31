@@ -281,10 +281,9 @@ export default function UsersPage(): JSX.Element {
 
 
   return (
-    <div className='flex h-screen'>
+    <div className='flex '>
       <div className='flex-1 overflow-auto p-6'>
         {/* Título de la página */}
-        <h2 className='text-3xl font-bold mb-6'>Users</h2>
 
         {/* Contenedor de la tabla */}
         <div className='max-w-7xl mx-auto'>

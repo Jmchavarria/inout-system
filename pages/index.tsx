@@ -49,7 +49,7 @@ const Home = () => {
     },
     {
       title: 'User Management',
-      desc: 'Roles, permissions, and activity logs. Fine-grained control for your team with simple auditing. Manage user access at different permission levels and keep detailed records of all activities.',
+      desc: 'Roles, permissions, and activity logs. Fine-grained control for your team with simple auditing.',
       iconType: 'users',
       route: '/users',
       restricted: true,
@@ -58,7 +58,7 @@ const Home = () => {
     },
     {
       title: 'Reports',
-      desc: 'Dashboards and exportable files. Key metrics ready to support decision-making. Visualize important data with interactive charts and export detailed reports in multiple formats.',
+      desc: 'Dashboards and exportable files. Key metrics ready to support decision-making.',
       iconType: 'chart',
       route: '/reports',
       restricted: true,
@@ -70,76 +70,73 @@ const Home = () => {
   const getIcon = (iconType: Feature['iconType']) => {
     switch (iconType) {
       case 'dollar':
-        return <CircleDollarSign className='w-7 h-7 text-emerald-600' aria-hidden='true' />;
+        return <CircleDollarSign className="w-7 h-7 text-emerald-600" />;
       case 'users':
-        return <Users2 className='w-7 h-7 text-blue-600' aria-hidden='true' />;
+        return <Users2 className="w-7 h-7 text-blue-600" />;
       case 'chart':
-        return <BarChart3 className='w-7 h-7 text-purple-600' aria-hidden='true' />;
+        return <BarChart3 className="w-7 h-7 text-purple-600" />;
     }
   };
 
   return (
-    <div className='p-6'>
-      <div className='max-w-7xl mx-auto'>
-        <div className='grid sm:grid-cols-1 gap-6 lg:grid-cols-2 xl:grid-cols-3'>
+    <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
+      <div className="w-full max-w-7xl px-6">
+        <div className="flex justify-center items-stretch gap-6 flex-wrap">
           {features.map((f) => {
             const isRestricted = f.restricted && role === 'user';
 
             return (
               <div
                 key={f.title}
-                className='relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer group'
+                className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow group w-full sm:w-80 lg:w-96 flex flex-col"
               >
                 {isRestricted ? (
                   <>
-                    {/* Imagen */}
-                    <div className='relative h-48 w-full overflow-hidden'>
+                    <div className="relative h-48 w-full overflow-hidden">
                       <Image
                         alt={f.alt}
+                        src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
-                        className='object-cover w-full h-full'
-                        quality={90}
+                        className="object-cover w-full h-full"
                       />
                     </div>
 
-                    {/* Contenido */}
-                    <div className='p-6'>
-                      <div className='flex items-center gap-3 mb-3'>
+                    <div className="p-6 flex-grow">
+                      <div className="flex items-center gap-3 mb-3">
                         {getIcon(f.iconType)}
-                        <h3 className='text-lg font-semibold text-gray-900'>{f.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {f.title}
+                        </h3>
                       </div>
-                      <p className='text-sm text-gray-600 leading-relaxed'>{f.desc}</p>
+                      <p className="text-sm text-gray-600">{f.desc}</p>
                     </div>
 
-                    {/* Overlay de restricción */}
-                    <div className='absolute inset-0 bg-white/90 z-10 flex flex-col items-center justify-center text-gray-600'>
-                      <Lock className='w-12 h-12 mb-2' />
-                      <p className='font-medium'>Restricted for your role</p>
+                    <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-gray-600">
+                      <Lock className="w-12 h-12 mb-2" />
+                      <p className="font-medium">Restricted for your role</p>
                     </div>
                   </>
                 ) : (
-                  <Link href={f.route} className='block h-full'>
-                    {/* Imagen */}
-                    <div className='relative h-48 w-full overflow-hidden'>
+                  <Link href={f.route} className="flex flex-col h-full">
+                    <div className="relative h-48 w-full overflow-hidden">
                       <Image
                         alt={f.alt}
+                        src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
-                        className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
-                        quality={90}
+                        className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-110"
                       />
                     </div>
 
-                    {/* Contenido */}
-                    <div className='p-6'>
-                      <div className='flex items-center gap-3 mb-3'>
+                    <div className="p-6 flex-grow">
+                      <div className="flex items-center gap-3 mb-3">
                         {getIcon(f.iconType)}
-                        <h3 className='text-lg font-semibold text-gray-900'>{f.title}</h3>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {f.title}
+                        </h3>
                       </div>
-                      <p className='text-sm text-gray-600 leading-relaxed'>{f.desc}</p>
+                      <p className="text-sm text-gray-600">{f.desc}</p>
                     </div>
                   </Link>
                 )}
