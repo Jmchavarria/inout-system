@@ -96,7 +96,7 @@ export const DataTable: React.FC<DataTableProps> = ({
   };
 
   return (
-    <div className="min-h-screen from-slate-50 to-slate-100">
+    <div className=" from-slate-50 to-slate-100">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
