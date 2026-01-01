@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus } from 'lucide-react';
-import { IncomeExpenseForm } from './income/IncomeExpenseForm';
+import { IncomeExpenseForm } from './income/components/IncomeExpenseForm';
 
 // Types
 type SortDirection = 'asc' | 'desc';
