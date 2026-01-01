@@ -130,7 +130,7 @@ const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
                   style: 'currency',
                   currency: 'COP',
                   minimumFractionDigits: 0,
-                }).format(ctx.parsed.y)}`,
+                }).format(ctx.parsed.y ?? 0)}`,
             },
           },
         },
