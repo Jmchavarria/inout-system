@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus } from 'lucide-react';
 
 // Types
 type SortDirection = 'asc' | 'desc';
@@ -23,9 +23,11 @@ interface DataTableProps {
   title: string;
   columns: ColumnConfig[];
   data: any[];
+  add: boolean
+  actions: boolean
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ title, columns, data }) => {
+export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add, actions }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState<number>(1);
@@ -82,7 +84,22 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data }) =>
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
-            <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
+            <div className='flex justify-between items-center mb-4 '>
+
+              <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
+
+              {add && (
+
+                <button className='rounded-lg bordern bg-black text-white border-black flex gap-3  items-center justify-center p-2'>
+
+                  New User
+                  <Plus className="w-6 h-6  text-black  bg-white  rounded-full p-2 cursor-pointer " aria-label="Agregar" />
+                </button>
+              )}
+
+
+
+            </div>
 
             {/* Buscador */}
             <div className="relative">
@@ -109,9 +126,8 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data }) =>
                     <th
                       key={index}
                       onClick={() => col.sortable !== false && handleSort(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                        col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                      } transition`}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                        } transition`}
                     >
                       <div className="flex items-center">
                         {col.label}
@@ -172,11 +188,10 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data }) =>
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${
-                        currentPage === page
-                          ? 'bg-blue-600 text-white'
-                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${currentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       {page}
                     </button>

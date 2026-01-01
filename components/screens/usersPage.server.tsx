@@ -1,39 +1,66 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { User } from '@/components/users'
 import { DataTable } from '../dataTable'
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([])
-  const [isLoading, setIsLoading] = useState(false)
+  const [dataLoaded, setDataLoaded] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const loadUsers = useCallback(async () => {
-    try {
-      setIsLoading(true)
+  useEffect(() => {
+    let isMounted = true
 
-      const res = await fetch('/api/users') // ✅ RELATIVO
-      if (!res.ok) throw new Error('Failed to fetch users')
+    const loadUsers = async () => {
+      try {
+        const res = await fetch('/api/users')
+        
+        if (!isMounted) return
 
-      const { items } = await res.json()
-      setUsers(items)
-    } catch (err) {
-      console.error(err)
-      alert('No se pudieron cargar los usuarios')
-    } finally {
-      setIsLoading(false)
+        if (!res.ok) {
+          throw new Error('Failed to fetch users')
+        }
+
+        const { items } = await res.json()
+        
+        if (isMounted) {
+          setUsers(items)
+          setError(null)
+          setDataLoaded(true)
+        }
+      } catch (err) {
+        if (isMounted) {
+          console.error(err)
+          setError('No se pudieron cargar los usuarios')
+          setDataLoaded(true)
+        }
+      }
+    }
+
+    loadUsers()
+
+    return () => {
+      isMounted = false
     }
   }, [])
 
-  useEffect(() => {
-    loadUsers()
-  }, [loadUsers])
+  // Renderizado progresivo
+  if (!dataLoaded) {
+    return (
+      <div className="p-6 flex items-center justify-center h-full">
+        <p className="text-gray-500">Cargando usuarios...</p>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6">
-
-=======
-
+      {error && (
+        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
 
       <DataTable
         title="Users"
@@ -44,7 +71,8 @@ export default function UsersPage() {
           { key: 'name', label: 'Name' },
           { key: 'role', label: 'Role' },
         ]}
-        // loading={isLoading}
+        add={false}
+        actions={true}
       />
     </div>
   )

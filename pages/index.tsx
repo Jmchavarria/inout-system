@@ -69,7 +69,7 @@ const Home = () => {
 
   const getIcon = useCallback((iconType: Feature['iconType']) => {
     const iconProps = { className: 'w-7 h-7', 'aria-hidden': true as const };
-    
+
     switch (iconType) {
       case 'dollar':
         return <CircleDollarSign className='w-7 h-7 text-emerald-600' aria-hidden='true' />;
@@ -78,7 +78,7 @@ const Home = () => {
       case 'chart':
         return <BarChart3 className='w-7 h-7 text-purple-600' aria-hidden='true' />;
     }
-  };
+  }, []);
 
   return (
     <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
@@ -100,7 +100,6 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
                         className='object-cover w-full h-full'
                         quality={90}
                       />
@@ -129,7 +128,6 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        src={f.image}
                         className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
                         quality={90}
                       />
