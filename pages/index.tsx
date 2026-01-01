@@ -68,33 +68,32 @@ const Home = () => {
   ], []);
 
   const getIcon = useCallback((iconType: Feature['iconType']) => {
-    const iconProps = { className: 'w-7 h-7', 'aria-hidden': true as const };
-
     switch (iconType) {
       case 'dollar':
-        return <CircleDollarSign className='w-7 h-7 text-emerald-600' aria-hidden='true' />;
+        return <CircleDollarSign className='w-6 h-6 sm:w-7 sm:h-7 text-emerald-600' aria-hidden='true' />;
       case 'users':
-        return <Users2 className='w-7 h-7 text-blue-600' aria-hidden='true' />;
+        return <Users2 className='w-6 h-6 sm:w-7 sm:h-7 text-blue-600' aria-hidden='true' />;
       case 'chart':
-        return <BarChart3 className='w-7 h-7 text-purple-600' aria-hidden='true' />;
+        return <BarChart3 className='w-6 h-6 sm:w-7 sm:h-7 text-purple-600' aria-hidden='true' />;
     }
   }, []);
 
   return (
-    <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 80px)' }}>
-      <div className="w-full max-w-7xl px-6">
-        <div className="flex justify-center items-stretch gap-6 flex-wrap">
+    <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-6 sm:py-8 md:py-12">
+      <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+        {/* Grid responsive: 1 columna en móvil, 3 columnas en desktop */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {features.map((f) => {
             const isRestricted = f.restricted && role === 'user';
 
             return (
               <div
                 key={f.title}
-                className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow group w-full sm:w-80 lg:w-96 flex flex-col"
+                className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow group flex flex-col"
               >
                 {isRestricted ? (
                   <>
-                    <div className="relative h-48 w-full overflow-hidden">
+                    <div className="relative h-40 sm:h-48 w-full overflow-hidden">
                       <Image
                         alt={f.alt}
                         src={f.image}
@@ -105,24 +104,28 @@ const Home = () => {
                       />
                     </div>
 
-                    <div className="p-6 flex-grow">
-                      <div className="flex items-center gap-3 mb-3">
+                    <div className="p-4 sm:p-6 flex-grow">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         {getIcon(f.iconType)}
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                           {f.title}
                         </h3>
                       </div>
-                      <p className="text-sm text-gray-600">{f.desc}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        {f.desc}
+                      </p>
                     </div>
 
-                    <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-gray-600">
-                      <Lock className="w-12 h-12 mb-2" />
-                      <p className="font-medium">Restricted for your role</p>
+                    <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-gray-600 px-4">
+                      <Lock className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
+                      <p className="font-medium text-sm sm:text-base text-center">
+                        Restricted for your role
+                      </p>
                     </div>
                   </>
                 ) : (
                   <Link href={f.route} className="flex flex-col h-full">
-                    <div className="relative h-48 w-full overflow-hidden">
+                    <div className="relative h-40 sm:h-48 w-full overflow-hidden">
                       <Image
                         alt={f.alt}
                         src={f.image}
@@ -133,14 +136,16 @@ const Home = () => {
                       />
                     </div>
 
-                    <div className="p-6 flex-grow">
-                      <div className="flex items-center gap-3 mb-3">
+                    <div className="p-4 sm:p-6 flex-grow">
+                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
                         {getIcon(f.iconType)}
-                        <h3 className="text-lg font-semibold text-gray-900">
+                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
                           {f.title}
                         </h3>
                       </div>
-                      <p className="text-sm text-gray-600">{f.desc}</p>
+                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                        {f.desc}
+                      </p>
                     </div>
                   </Link>
                 )}
