@@ -1,5 +1,5 @@
-import NewTransactionForm from './newTransactionForm';
+import { IncomeExpenseForm } from './IncomeExpenseForm';
 import { columns, Income } from './columns';
 
-export { NewTransactionForm, columns };
+export { IncomeExpenseForm, columns };
 export type { Income };
