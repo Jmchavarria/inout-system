@@ -15,7 +15,7 @@ export default function UsersPage() {
     const loadUsers = async () => {
       try {
         const res = await fetch('/api/users')
-        
+
         if (!isMounted) return
 
         if (!res.ok) {
@@ -23,7 +23,7 @@ export default function UsersPage() {
         }
 
         const { items } = await res.json()
-        
+
         if (isMounted) {
           setUsers(items)
           setError(null)
@@ -71,7 +71,7 @@ export default function UsersPage() {
           { key: 'name', label: 'Name' },
           { key: 'role', label: 'Role' },
         ]}
-        add={false}
+        addLabel={null}
         actions={true}
       />
     </div>

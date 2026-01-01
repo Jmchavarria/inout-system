@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus } from 'lucide-react';
+import { IncomeExpenseForm } from './income/IncomeExpenseForm';
 
 // Types
 type SortDirection = 'asc' | 'desc';
@@ -23,15 +24,31 @@ interface DataTableProps {
   title: string;
   columns: ColumnConfig[];
   data: any[];
-  add: boolean
-  actions: boolean
+  addLabel: string | null;
+  actions: boolean;
+  fetchExecuted?: (data: any) => Promise<void>;
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add, actions }) => {
+export const DataTable: React.FC<DataTableProps> = ({ 
+  title, 
+  columns, 
+  data, 
+  addLabel, 
+  actions,
+  fetchExecuted 
+}) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState<number>(1);
+  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
   const itemsPerPage = 5;
+
+  const handleTransactionSubmit = async (data: any) => {
+    if (fetchExecuted) {
+      await fetchExecuted(data);
+    }
+  };
 
   // Filtrado
   const filteredData = useMemo(() => {
@@ -84,21 +101,18 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add,
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
-            <div className='flex justify-between items-center mb-4 '>
-
+            <div className='flex justify-between items-center mb-4'>
               <h2 className="text-2xl font-bold text-gray-800 mb-4">{title}</h2>
 
-              {add && (
-
-                <button className='rounded-lg bordern bg-black text-white border-black flex gap-3  items-center justify-center p-2'>
-
-                  New User
-                  <Plus className="w-6 h-6  text-black  bg-white  rounded-full p-2 cursor-pointer " aria-label="Agregar" />
+              {addLabel && (
+                <button
+                  className='rounded-lg w-10 h-10 bg-gray-600 text-white flex gap-2 items-center justify-center hover:bg-gray-800 transition-all duration-200 hover:scale-105 active:scale-95'
+                  title={addLabel}
+                  onClick={() => setIsModalOpen(true)}
+                >
+                  <Plus className="w-5 h-5 transition-transform group-hover:rotate-90 duration-300" aria-label="Agregar" />
                 </button>
               )}
-
-
-
             </div>
 
             {/* Buscador */}
@@ -126,8 +140,9 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add,
                     <th
                       key={index}
                       onClick={() => col.sortable !== false && handleSort(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                        } transition`}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                        col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                      } transition`}
                     >
                       <div className="flex items-center">
                         {col.label}
@@ -188,10 +203,11 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add,
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`px-4 py-2 text-sm font-medium rounded-lg transition ${currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                        }`}
+                      className={`w-10 h-10 text-sm font-medium rounded-lg transition flex items-center justify-center ${
+                        currentPage === page
+                          ? 'bg-gray-600 text-white'
+                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                      }`}
                     >
                       {page}
                     </button>
@@ -210,7 +226,13 @@ export const DataTable: React.FC<DataTableProps> = ({ title, columns, data, add,
           )}
         </div>
       </div>
+
+      {/* Modal */}
+      <IncomeExpenseForm  
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSubmit={handleTransactionSubmit}
+      />
     </div>
   );
-}
-
+};

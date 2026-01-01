@@ -1,20 +1,13 @@
 'use client';
 
-import { useEffect, useMemo, useState, useCallback, useTransition } from 'react';
+import { useEffect, useMemo, useState, useCallback } from 'react';
 import { AlertCircle } from 'lucide-react';
 import { DataTable } from '../dataTable';
-import { NewTransactionForm, type Income } from '@/components/income';
 import { useAuth } from '@/context/auth-context';
 
 // ============================================================================
 // DEFINICIÓN DE TIPOS
 // ============================================================================
-
-type FormData = {
-  concept: string;
-  amount: string;
-  date: string;
-};
 
 type IncomeApi = {
   id: string | number;
@@ -26,6 +19,18 @@ type IncomeApi = {
     name?: string | null;
     email?: string | null;
   } | null;
+};
+
+type Income = {
+  id: string;
+  concept: string;
+  amount: number;
+  date: string;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
 };
 
 type IncomeListResponse = { items: IncomeApi[] };
@@ -96,20 +101,16 @@ export default function IncomeAndExpenses() {
 
   // Estados de carga
   const [dataLoaded, setDataLoaded] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [isPending, startTransition] = useTransition();
 
   // Estados de datos
   const [items, setItems] = useState<Income[]>([]);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Verificar si es admin usando el contexto
   const isAdmin = user?.role === 'admin';
 
   // Cargar transacciones
   useEffect(() => {
-    // Esperar a que el usuario esté cargado
     if (!user) return;
 
     let isMounted = true;
@@ -147,15 +148,11 @@ export default function IncomeAndExpenses() {
     };
   }, [user]);
 
-  // Función para crear transacción
-  const createTransaction = useCallback(async (data: FormData) => {
+  // Función para crear transacción - esta es la que usará el DataTable
+  const handleTransactionSubmit = useCallback(async (data: any) => {
     if (!isAdmin) {
-      setDataError('No tienes permiso para crear transacciones.');
-      return false;
+      throw new Error('No tienes permiso para crear transacciones.');
     }
-
-    setIsSubmitting(true);
-    setDataError(null);
 
     try {
       const payload = {
@@ -175,38 +172,17 @@ export default function IncomeAndExpenses() {
       );
 
       const normalizedTransaction = normalizeIncome(createdTransaction);
+      
+      // Agregar la nueva transacción al inicio de la lista
       setItems((prevItems) => [normalizedTransaction, ...prevItems]);
-      return true;
-
+      
     } catch (e) {
       const errorMessage = e instanceof Error
         ? e.message
         : 'No se pudo crear la transacción';
-      setDataError(errorMessage);
-      return false;
-    } finally {
-      setIsSubmitting(false);
+      throw new Error(errorMessage);
     }
   }, [isAdmin]);
-
-  const handleNewTransaction = useCallback(async (data: FormData) => {
-    const success = await createTransaction(data);
-    if (success) {
-      setShowForm(false);
-    }
-  }, [createTransaction]);
-
-  const handleOpenForm = useCallback(() => {
-    startTransition(() => {
-      setShowForm(true);
-    });
-  }, []);
-
-  const handleCloseForm = useCallback(() => {
-    startTransition(() => {
-      setShowForm(false);
-    });
-  }, []);
 
   const tableData = useMemo(() => {
     return items.map(item => ({
@@ -222,7 +198,6 @@ export default function IncomeAndExpenses() {
     }));
   }, [items]);
 
-  // Renderizado condicional basado en el estado de carga
   // Esperar a que el contexto de auth cargue
   if (!user) {
     return (
@@ -253,27 +228,18 @@ export default function IncomeAndExpenses() {
                 <p className='text-sm text-gray-600 mt-2'>{dataError}</p>
               </div>
             </div>
-          ) : (
+          ) : ( 
             <DataTable
               title='Income and Expenses'
               columns={columns}
               data={tableData}
-              add={true}
+              addLabel={isAdmin ? 'New Income/Expense' : null}
               actions={false}
+              fetchExecuted={handleTransactionSubmit}
             />
           )}
         </div>
       </div>
-
-      {showForm && isAdmin && (
-        <div className='fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4'>
-          <NewTransactionForm
-            onSubmit={handleNewTransaction}
-            onCancel={handleCloseForm}
-            isLoading={isSubmitting}
-          />
-        </div>
-      )}
     </div>
   );
 }
