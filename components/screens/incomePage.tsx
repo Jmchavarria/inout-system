@@ -70,8 +70,10 @@ export default function IncomeAndExpenses() {
     }))
   ), [items]);
 
-  if (!user) {
-    return <p className="text-gray-500">Verificando permisos…</p>;
+  if (!user) {  
+    return <div className="p-6 flex items-center justify-center h-full">
+      <p className="text-gray-500">Verificando permisos...</p>
+    </div>
   }
 
   if (!dataLoaded) {
