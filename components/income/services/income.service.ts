@@ -10,7 +10,7 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
     try {
       const data = await res.json();
       message = data?.error || data?.message || message;
-    } catch {}
+    } catch { }
     throw new Error(message);
   }
   return res.json();
@@ -32,4 +32,26 @@ export const incomeService = {
       body: JSON.stringify(payload),
     });
   },
+
+
 };
+
+
+export const userService = {
+  list() {
+    return fetchJSON('/api/users', {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' }
+    });
+  },
+
+  edit(payload: { name: string, role: string }) {
+    return fetchJSON('/api/users', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(payload)
+    });
+  }
+}
+

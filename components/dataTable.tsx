@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus } from 'lucide-react';
+import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus, SquarePen } from 'lucide-react';
 import { IncomeExpenseForm } from './income/components/IncomeExpenseForm';
+import { UserForm } from './users/components/usersForm';
 
 // Types
 type SortDirection = 'asc' | 'desc';
@@ -29,18 +30,25 @@ interface DataTableProps {
   fetchExecuted?: (data: any) => Promise<void>;
 }
 
-export const DataTable: React.FC<DataTableProps> = ({ 
-  title, 
-  columns, 
-  data, 
-  addLabel, 
+type ModalType = 'income' | 'user' | null;
+
+
+export const DataTable: React.FC<DataTableProps> = ({
+  title,
+  columns,
+  data,
+  addLabel,
   actions,
-  fetchExecuted 
+  fetchExecuted
 }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState<number>(1);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalType, setModalType] = useState<ModalType>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+
 
   const itemsPerPage = 5;
 
@@ -95,6 +103,8 @@ export const DataTable: React.FC<DataTableProps> = ({
       : <ChevronDown className="w-4 h-4 ml-1" />;
   };
 
+
+
   return (
     <div className=" from-slate-50 to-slate-100">
       <div className="max-w-6xl mx-auto">
@@ -108,7 +118,11 @@ export const DataTable: React.FC<DataTableProps> = ({
                 <button
                   className='rounded-lg w-10 h-10 bg-gray-600 text-white flex gap-2 items-center justify-center hover:bg-gray-800 transition-all duration-200 hover:scale-105 active:scale-95'
                   title={addLabel}
-                  onClick={() => setIsModalOpen(true)}
+                  onClick={() => {
+                    setModalType(title === 'Users' ? 'user' : 'income');
+                    setSelectedUser(null);
+                    setIsModalOpen(true);
+                  }}
                 >
                   <Plus className="w-5 h-5 transition-transform group-hover:rotate-90 duration-300" aria-label="Agregar" />
                 </button>
@@ -140,9 +154,8 @@ export const DataTable: React.FC<DataTableProps> = ({
                     <th
                       key={index}
                       onClick={() => col.sortable !== false && handleSort(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                        col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                      } transition`}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                        } transition`}
                     >
                       <div className="flex items-center">
                         {col.label}
@@ -150,6 +163,15 @@ export const DataTable: React.FC<DataTableProps> = ({
                       </div>
                     </th>
                   ))}
+
+                  {/* ✅ Header de acciones */}
+                  {actions && (
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      actions
+                    </th>
+                  )}
+
+
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -167,6 +189,29 @@ export const DataTable: React.FC<DataTableProps> = ({
                           {item[col.key]}
                         </td>
                       ))}
+
+                      {actions && (
+                        <td
+
+
+                          className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider `}
+                        >
+                          <div className="flex items-center ">
+                            <SquarePen
+                              className="w-4 h-4 cursor-pointer"
+                              onClick={() => {
+                                setSelectedUser(item);
+                                setModalType('user');
+                                setIsModalOpen(true);
+                              }}
+                            />
+
+
+
+                          </div>
+                        </td>
+
+                      )}
                     </tr>
                   ))
                 ) : (
@@ -203,11 +248,10 @@ export const DataTable: React.FC<DataTableProps> = ({
                     <button
                       key={page}
                       onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 text-sm font-medium rounded-lg transition flex items-center justify-center ${
-                        currentPage === page
-                          ? 'bg-gray-600 text-white'
-                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                      }`}
+                      className={`w-10 h-10 text-sm font-medium rounded-lg transition flex items-center justify-center ${currentPage === page
+                        ? 'bg-gray-600 text-white'
+                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
+                        }`}
                     >
                       {page}
                     </button>
@@ -228,11 +272,36 @@ export const DataTable: React.FC<DataTableProps> = ({
       </div>
 
       {/* Modal */}
-      <IncomeExpenseForm  
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSubmit={handleTransactionSubmit}
-      />
+      {modalType === 'income' && (
+        <IncomeExpenseForm
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSubmit={handleTransactionSubmit}
+        />
+      )}
+
+      {modalType === 'user' && (
+        <UserForm
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          initialData={selectedUser}
+          onSubmit={async (formData) => {
+            if (!selectedUser || !fetchExecuted) return
+
+            await fetchExecuted({
+              id: selectedUser.id,   // 👈 AQUÍ se une el id
+              ...formData            // name, role
+            })
+
+            setIsModalOpen(false)
+            setSelectedUser(null)
+          }}
+        />
+
+      )}
+
+
+
     </div>
   );
 };

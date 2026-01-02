@@ -32,7 +32,7 @@ export const IncomeExpenseForm: React.FC<IncomeExpenseFormProps> = ({
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
     }
-  };
+  };  
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

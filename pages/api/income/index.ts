@@ -67,62 +67,25 @@ function getIncomeDelegate() {
 /**
  * findMany con "fallbacks" y filtrado por usuario
  */
-async function safeFindMany(delegate: any, userId: string, isAdmin: boolean) {
-  console.log(`🔍 [safeFindMany] Fetching records for userId: ${userId}, isAdmin: ${isAdmin}`);
+async function safeFindMany(delegate: any) {
+  console.log(`🔍 [safeFindMany] Fetching all records`);
 
-  // Construir el whereClause: admin ve todo, user solo sus registros
-  const whereClause = isAdmin ? {} : { userId };
-
-  // Intento 1: con include + orderBy + where
   try {
-    const result = await delegate.findMany({
-      where: whereClause,
+    return await delegate.findMany({
       orderBy: { date: 'desc' },
       include: { user: { select: { id: true, name: true, email: true } } },
     });
-    console.log(`✅ [safeFindMany] Success with include + orderBy + where. Found ${result.length} records`);
-    return result;
-  } catch (error) {
-    console.log('⚠️ [safeFindMany] Failed with include + orderBy + where, trying orderBy + where only');
-  }
-
-  // Intento 2: sólo con orderBy + where
-  try {
-    const result = await delegate.findMany({
-      where: whereClause,
-      orderBy: { date: 'desc' },
-    });
-    console.log(`✅ [safeFindMany] Success with orderBy + where. Found ${result.length} records`);
-    return result;
-  } catch (error) {
-    console.log('⚠️ [safeFindMany] Failed with orderBy + where, trying basic findMany with where');
-  }
-
-  // Intento 3: básico con where
-  try {
-    const result = await delegate.findMany({
-      where: whereClause,
-    });
-    console.log(`✅ [safeFindMany] Success with where only. Found ${result.length} records`);
-    return result;
-  } catch (error) {
-    console.log('⚠️ [safeFindMany] Failed with where, trying without filters (fallback)');
-  }
-
-  // Intento 4: sin filtros (fallback final - NO RECOMENDADO en producción)
-  try {
-    const result = await delegate.findMany();
-    console.log('⚠️ [safeFindMany] Using unfiltered fallback - security risk!');
-    // Filtrar manualmente en memoria si no hay otra opción
-    if (!isAdmin) {
-      return result.filter((r: any) => r.userId === userId);
+  } catch {
+    try {
+      return await delegate.findMany({
+        orderBy: { date: 'desc' },
+      });
+    } catch {
+      return await delegate.findMany();
     }
-    return result;
-  } catch (error) {
-    console.error('❌ [safeFindMany] All attempts failed:', error);
-    throw error;
   }
 }
+
 
 /**
  * create con "fallbacks": asocia automáticamente al usuario autenticado
@@ -258,13 +221,10 @@ export default async function handler(
       return;
     }
 
-    const userRole = (user.role || 'user').toLowerCase();
-    const isAdmin = userRole === 'admin';
 
-    console.log(`✅ [API /income] Authenticated: userId=${userId}, role=${userRole}, isAdmin=${isAdmin}`);
 
     // ✅ PERMITE ACCESO A ADMIN Y USER
-    await requireRole(req, ['admin', 'user']);
+    await requireRole(req, ['admin']);
     console.log('✅ [API /income] Role check passed');
 
     const delegate = getIncomeDelegate();
@@ -282,7 +242,7 @@ export default async function handler(
     // ═══════════════════════════════════════════════════════════
     if (req.method === 'GET') {
       console.log('📋 [API /income] Processing GET request');
-      const rows = await safeFindMany(delegate, userId, isAdmin);
+      const rows = await safeFindMany(delegate);
       const items = (rows as any[]).map(normalizeIncome);
       console.log(`✅ [API /income] Returning ${items.length} items`);
       res.status(200).json({ items });
