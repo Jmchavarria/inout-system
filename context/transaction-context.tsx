@@ -52,12 +52,15 @@ export function TransactionsProvider({ children }: { children: React.ReactNode }
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
       });
+      
+      console.log(response)
 
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
 
       const { items } = await response.json();
+      console.log(items)
       setTransactions(items);
     } catch (e) {
       const errorMsg = e instanceof Error ? e.message : 'Error al cargar transacciones';
@@ -104,39 +107,3 @@ export function useTransactions() {
   }
   return context;
 }
-
-// ============================================================================
-// EJEMPLO DE USO
-// ============================================================================
-
-/*
-// 1. En tu layout o _app.tsx:
-import { TransactionsProvider } from '@/context/transactions-context';
-
-<TransactionsProvider>
-  <YourApp />
-</TransactionsProvider>
-
-// 2. En Income page:
-import { useTransactions } from '@/context/transactions-context';
-
-export default function IncomePage() {
-  const { transactions, isLoading, addTransaction } = useTransactions();
-  
-  return (
-    <DataTable data={transactions} isLoading={isLoading} />
-  );
-}
-
-// 3. En Reports page:
-import { useTransactions } from '@/context/transactions-context';
-
-export default function ReportsPage() {
-  const { transactions, isLoading } = useTransactions();
-  
-  // ✅ Mismos datos que Income, sin petición extra
-  return (
-    <Chart data={transactions} />
-  );
-}
-*/
