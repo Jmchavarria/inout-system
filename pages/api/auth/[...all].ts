@@ -1,4 +1,4 @@
-// Archivo: pages/api/auth/[...nextauth].ts o app/api/auth/[...nextauth]/route.ts
+
 // Este es el handler principal de autenticación para Better Auth
 
 // ============================================================================
