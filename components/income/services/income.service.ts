@@ -36,22 +36,3 @@ export const incomeService = {
 
 };
 
-
-export const userService = {
-  list() {
-    return fetchJSON('/api/users', {
-      credentials: 'include',
-      headers: { 'Content-Type': 'application/json' }
-    });
-  },
-
-  edit(payload: { name: string, role: string }) {
-    return fetchJSON('/api/users', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify(payload)
-    });
-  }
-}
-

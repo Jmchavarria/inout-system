@@ -1,10 +1,14 @@
 'use client';
 
-// npm i xlsx
 import * as XLSX from 'xlsx';
 import React, { useMemo, useEffect, useRef } from 'react';
 import Chart from 'chart.js/auto';
-import { Download, TrendingUp, TrendingDown } from 'lucide-react';
+import {
+  Download,
+  TrendingUp,
+  TrendingDown,
+  Wallet,
+} from 'lucide-react';
 import { useTransactions } from '@/context/transaction-context';
 
 /* ===========================
@@ -26,62 +30,54 @@ interface Tx {
 }
 
 interface ChartPoint {
-  date: string;
+  period: string;
   income: number;
   expenses: number;
   balance: number;
 }
 
 /* ===========================
-   Date helpers (LOCAL SAFE)
+   Helpers
 =========================== */
 
-const parseLocalYmd = (ymd: string): Date => {
-  const [y, m, d] = ymd.split('-').map(Number);
-  return new Date(y, m - 1, d);
-};
+const formatMonth = (ym: string) =>
+  new Intl.DateTimeFormat('es-CO', {
+    month: 'short',
+    year: 'numeric',
+  }).format(new Date(`${ym}-01`));
 
-const ymd = (d: Date): string => {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${dd}`;
-};
+const formatCurrency = (v: number) =>
+  new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+  }).format(v);
 
 /* ===========================
-   UI Components
+   UI helpers
 =========================== */
 
-const Button = ({ onClick, className, disabled, children }: any) => (
+const ChartContainer = ({ children }: { children: React.ReactNode }) => (
+  <div className="relative h-[360px] w-full">{children}</div>
+);
+
+const Button = ({
+  onClick,
+  disabled,
+  className,
+  children,
+}: any) => (
   <button
     onClick={onClick}
     disabled={disabled}
-    className={`inline-flex items-center px-4 py-2 rounded-md font-medium transition-colors disabled:opacity-50 ${className}`}
+    className={`inline-flex items-center px-4 py-2 rounded-md font-medium transition disabled:opacity-50 ${className}`}
   >
     {children}
   </button>
 );
 
-const Card = ({ children }: any) => (
-  <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-    {children}
-  </div>
-);
-
-const CardHeader = ({ children }: any) => (
-  <div className="p-6">{children}</div>
-);
-
-const CardTitle = ({ children, className = '' }: any) => (
-  <h3 className={className}>{children}</h3>
-);
-
-const CardContent = ({ children, className = '' }: any) => (
-  <div className={`p-6 pt-0 ${className}`}>{children}</div>
-);
-
 /* ===========================
-   Chart
+   Charts
 =========================== */
 
 const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
@@ -89,28 +85,37 @@ const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
   const chartRef = useRef<Chart | null>(null);
 
   useEffect(() => {
-    if (!canvasRef.current || data.length === 0) return;
-
+    if (!canvasRef.current || !data.length) return;
     chartRef.current?.destroy();
+
+    const maxValue = Math.max(
+      ...data.map(d =>
+        Math.max(d.income, d.expenses, Math.abs(d.balance))
+      )
+    );
 
     chartRef.current = new Chart(canvasRef.current, {
       type: 'bar',
       data: {
-        labels: data.map((d) => d.date),
+        labels: data.map(d => formatMonth(d.period)),
         datasets: [
           {
             label: 'Income',
-            data: data.map((d) => d.income),
+            data: data.map(d => d.income),
             backgroundColor: 'rgba(34,197,94,0.85)',
-            borderRadius: 6,
-            barThickness: 12,
+            borderRadius: 8,
           },
           {
             label: 'Expenses',
-            data: data.map((d) => d.expenses),
+            data: data.map(d => d.expenses),
             backgroundColor: 'rgba(239,68,68,0.85)',
-            borderRadius: 6,
-            barThickness: 12,
+            borderRadius: 8,
+          },
+          {
+            label: 'Balance',
+            data: data.map(d => d.balance),
+            backgroundColor: 'rgba(59,130,246,0.85)',
+            borderRadius: 8,
           },
         ],
       },
@@ -121,33 +126,34 @@ const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
         plugins: {
           legend: {
             position: 'top',
-            labels: { usePointStyle: true },
+            labels: { usePointStyle: true, padding: 16 },
           },
           tooltip: {
+            backgroundColor: '#111827',
+            padding: 12,
             callbacks: {
-              label: (ctx) =>
-                `${ctx.dataset.label}: ${new Intl.NumberFormat('es-CO', {
-                  style: 'currency',
-                  currency: 'COP',
-                  minimumFractionDigits: 0,
-                }).format(ctx.parsed.y ?? 0)}`,
+              title: ctx =>
+                formatMonth(data[ctx[0].dataIndex].period),
+              label: ctx => {
+                const d = data[ctx.dataIndex];
+                return [
+                  `Income: ${formatCurrency(d.income)}`,
+                  `Expenses: ${formatCurrency(d.expenses)}`,
+                  `Balance: ${
+                    d.balance >= 0 ? '+' : '-'
+                  }${formatCurrency(Math.abs(d.balance))}`,
+                ];
+              },
             },
           },
         },
         scales: {
-          x: {
-            grid: { display: false },
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45,
-              autoSkip: true,
-              maxTicksLimit: 15,
-            },
-          },
+          x: { grid: { display: false } },
           y: {
-            beginAtZero: true,
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            suggestedMax: maxValue * 1.15,
             ticks: {
-              callback: (v) =>
+              callback: v =>
                 new Intl.NumberFormat('es-CO', {
                   style: 'currency',
                   currency: 'COP',
@@ -163,9 +169,87 @@ const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
   }, [data]);
 
   return (
-    <div className="relative h-96">
+    <ChartContainer>
       <canvas ref={canvasRef} />
-    </div>
+    </ChartContainer>
+  );
+};
+
+const BalanceLineChart = ({ data }: { data: ChartPoint[] }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const chartRef = useRef<Chart | null>(null);
+
+  useEffect(() => {
+    if (!canvasRef.current || !data.length) return;
+    chartRef.current?.destroy();
+
+    const ctx = canvasRef.current.getContext('2d');
+    if (!ctx) return;
+
+    const gradient = ctx.createLinearGradient(0, 0, 0, 360);
+    gradient.addColorStop(0, 'rgba(59,130,246,0.25)');
+    gradient.addColorStop(1, 'rgba(59,130,246,0)');
+
+    chartRef.current = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: data.map(d => formatMonth(d.period)),
+        datasets: [
+          {
+            label: 'Balance',
+            data: data.map(d => d.balance),
+            borderColor: '#3b82f6',
+            backgroundColor: gradient,
+            borderWidth: 3,
+            fill: true,
+            tension: 0.4,
+            pointRadius: 0,
+            pointHoverRadius: 6,
+          },
+        ],
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: { usePointStyle: true },
+          },
+          tooltip: {
+            backgroundColor: '#111827',
+            padding: 12,
+            callbacks: {
+              label: ctx =>
+                `Balance: ${formatCurrency(ctx.parsed.y ?? 0)}`,
+            },
+          },
+        },
+        scales: {
+          x: { grid: { display: false } },
+          y: {
+            grid: { color: 'rgba(0,0,0,0.04)' },
+            ticks: {
+              callback: v =>
+                new Intl.NumberFormat('es-CO', {
+                  style: 'currency',
+                  currency: 'COP',
+                  notation: 'compact',
+                }).format(v as number),
+            },
+          },
+        },
+      },
+    });
+
+    return () => chartRef.current?.destroy();
+  }, [data]);
+
+  return (
+    <ChartContainer>
+      <canvas ref={canvasRef} />
+    </ChartContainer>
   );
 };
 
@@ -174,175 +258,138 @@ const BalanceChart = ({ data }: { data: ChartPoint[] }) => {
 =========================== */
 
 export default function ReportsPage(): JSX.Element {
-  const { transactions, isLoading, error } = useTransactions();
+  const { transactions } = useTransactions();
 
   /* ---------------------------
-     Today (no future dates)
+     Aggregate by month (last 6)
   --------------------------- */
 
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  /* ---------------------------
-     Normalize + filter
-  --------------------------- */
-
-  const txs = useMemo<Tx[]>(() => {
-    return transactions
-      .map((t) => ({
-        id: t.id,
-        concept: t.concept,
-        amount: t.amount,
-        date: t.date.slice(0, 10),
-        user: t.user,
-      }))
-      .filter((t) => parseLocalYmd(t.date) <= today);
-  }, [transactions, today]);
-
-  /* ---------------------------
-     Totals
-  --------------------------- */
-
-  const totalIngresos = useMemo(
-    () => txs.filter((t) => t.amount > 0).reduce((s, t) => s + t.amount, 0),
-    [txs]
-  );
-
-  const totalEgresosAbs = useMemo(
-    () => txs.filter((t) => t.amount < 0).reduce((s, t) => s + Math.abs(t.amount), 0),
-    [txs]
-  );
-
-  const formatCurrency = (value: number) =>
-    new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-    }).format(value);
-
-  /* ---------------------------
-     Aggregate by day
-  --------------------------- */
-
-  const aggregatedByDay = useMemo<ChartPoint[]>(() => {
+  const chartData = useMemo<ChartPoint[]>(() => {
     const map = new Map<string, { income: number; expenses: number }>();
 
-    for (const t of txs) {
-      const curr = map.get(t.date) ?? { income: 0, expenses: 0 };
+    transactions.forEach(t => {
+      const ym = t.date.slice(0, 7);
+      const curr = map.get(ym) ?? { income: 0, expenses: 0 };
       t.amount >= 0
         ? (curr.income += t.amount)
         : (curr.expenses += Math.abs(t.amount));
-      map.set(t.date, curr);
-    }
-
-    let running = 0;
+      map.set(ym, curr);
+    });
 
     return Array.from(map.entries())
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([date, v]) => {
-        running += v.income - v.expenses;
-        return { date, ...v, balance: running };
-      });
-  }, [txs]);
+      .slice(-6)
+      .map(([period, v]) => ({
+        period,
+        ...v,
+        balance: v.income - v.expenses,
+      }));
+  }, [transactions]);
 
   /* ---------------------------
-     Dense last N days
+     Totals for cards (same period)
   --------------------------- */
 
-  const DENSE_DAYS = 90;
-
-  const chartData = useMemo<ChartPoint[]>(() => {
-    if (!aggregatedByDay.length) return [];
-
-    const lastDataDate = parseLocalYmd(
-      aggregatedByDay[aggregatedByDay.length - 1].date
+  const totals = useMemo(() => {
+    return chartData.reduce(
+      (acc, m) => {
+        acc.income += m.income;
+        acc.expenses += m.expenses;
+        acc.balance += m.balance;
+        return acc;
+      },
+      { income: 0, expenses: 0, balance: 0 }
     );
+  }, [chartData]);
 
-    const lastDate = new Date(
-      Math.min(lastDataDate.getTime(), today.getTime())
-    );
+  const last = chartData.at(-1);
 
-    const start = new Date(lastDate);
-    start.setDate(start.getDate() - (DENSE_DAYS - 1));
+  const insight =
+    last &&
+    (last.balance >= 0
+      ? `En ${formatMonth(last.period)} tus ingresos superaron tus gastos en ${formatCurrency(
+          last.balance
+        )}`
+      : `En ${formatMonth(last.period)} gastaste ${formatCurrency(
+          Math.abs(last.balance)
+        )} más de lo que ingresaste`);
 
-    const byDate = new Map(aggregatedByDay.map((p) => [p.date, p]));
-    let running = 0;
+  /* ---------------------------
+     Export
+  --------------------------- */
 
-    return Array.from({ length: DENSE_DAYS }).map((_, i) => {
-      const d = new Date(start);
-      d.setDate(start.getDate() + i);
-      const key = ymd(d);
-      const p = byDate.get(key);
-      if (p) running = p.balance;
-
-      return {
-        date: key,
-        income: p?.income ?? 0,
-        expenses: p?.expenses ?? 0,
-        balance: running,
-      };
-    });
-  }, [aggregatedByDay, today]);
+  const handleDownloadExcel = () => {
+    if (!transactions.length) return;
+    const ws = XLSX.utils.json_to_sheet(transactions);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Transactions');
+    XLSX.writeFile(wb, 'financial_report.xlsx');
+  };
 
   /* ===========================
      Render
   ============================ */
 
-  if (isLoading) {
-    return <div className="h-screen flex items-center justify-center">Cargando reportes…</div>;
-  }
-
-  if (error) {
-    return <div className="h-screen flex items-center justify-center text-red-600">{error}</div>;
-  }
-
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold">Financial Reports</h1>
-        <Button className="bg-green-600 text-white">
-          <Download className="h-4 w-4 mr-2" /> Download Excel
+        <Button
+          onClick={handleDownloadExcel}
+          disabled={!transactions.length}
+          className="bg-green-600 text-white hover:bg-green-700"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Download Excel
         </Button>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">
-            Income vs Expenses (Last {DENSE_DAYS} Days)
-          </CardTitle>
-        </CardHeader>
+      {/* Summary Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="rounded-xl border bg-green-50 p-6">
+          <TrendingUp className="text-green-600 mb-2" />
+          <p className="text-sm text-green-700">Income</p>
+          <p className="text-2xl font-bold text-green-700">
+            {formatCurrency(totals.income)}
+          </p>
+        </div>
 
-        <CardContent className="space-y-6">
-          {/* Totals */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-green-700">
-                <TrendingUp className="h-4 w-4" />
-                Total Income
-              </div>
-              <div className="mt-1 text-2xl font-bold text-green-700">
-                {formatCurrency(totalIngresos)}
-              </div>
-            </div>
+        <div className="rounded-xl border bg-red-50 p-6">
+          <TrendingDown className="text-red-600 mb-2" />
+          <p className="text-sm text-red-700">Expenses</p>
+          <p className="text-2xl font-bold text-red-700">
+            {formatCurrency(totals.expenses)}
+          </p>
+        </div>
 
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4">
-              <div className="flex items-center gap-2 text-sm font-medium text-red-700">
-                <TrendingDown className="h-4 w-4" />
-                Total Expenses
-              </div>
-              <div className="mt-1 text-2xl font-bold text-red-700">
-                {formatCurrency(totalEgresosAbs)}
-              </div>
-            </div>
-          </div>
+        <div className="rounded-xl border bg-blue-50 p-6">
+          <Wallet className="text-blue-600 mb-2" />
+          <p className="text-sm text-blue-700">Balance</p>
+          <p className="text-2xl font-bold text-blue-700">
+            {formatCurrency(totals.balance)}
+          </p>
+        </div>
+      </div>
 
-          {/* Chart */}
+      {last && (
+        <p className="text-sm text-gray-600">{insight}</p>
+      )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-white rounded-xl border shadow-sm p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            Income vs Expenses
+          </h3>
           <BalanceChart data={chartData} />
-        </CardContent>
-      </Card>
+        </div>
+
+        <div className="bg-white rounded-xl border shadow-sm p-6">
+          <h3 className="text-lg font-semibold mb-4">
+            Balance Evolution
+          </h3>
+          <BalanceLineChart data={chartData} />
+        </div>
+      </div>
     </div>
   );
 }
