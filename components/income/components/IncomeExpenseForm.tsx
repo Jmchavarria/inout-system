@@ -17,7 +17,7 @@ export const IncomeExpenseForm: React.FC<IncomeExpenseFormProps> = ({
   onClose,
   onSubmit
 }) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toLocaleDateString('en-CA'); // formato YYYY-MM-DD
 
   const [formData, setFormData] = useState<TransactionFormData>({
     amount: '',
