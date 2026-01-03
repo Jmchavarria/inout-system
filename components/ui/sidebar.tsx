@@ -9,45 +9,58 @@ import {
   ChevronRight,
   CircleDollarSign,
   User2,
-  ChartLine,
+  TrendingUp,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { authClient } from '@/lib/auth-client';
+import { useAuth } from '@/context/auth-context';
 
 export default function Sidebar() {
   const [isOpen, setIsOpen] = useState(true);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const router = useRouter();
+  const { user } = useAuth();
 
   const menuItems = [
     {
       href: '/income',
       label: 'Income and expenses',
       icon: <CircleDollarSign size={20} />,
+      allowedRoles: ['user', 'admin'], // Accesible para todos
     },
-    { href: '/users', label: 'Users', icon: <User2 size={20} /> },
-    { href: '/reports', label: 'Reports', icon: <ChartLine size={20} /> },
+    { 
+      href: '/users', 
+      label: 'Users', 
+      icon: <User2 size={20} />,
+      allowedRoles: ['admin'], // Solo para admin
+    },
+    { 
+      href: '/reports', 
+      label: 'Reports', 
+      icon: <TrendingUp size={20} />,
+      allowedRoles: [ 'admin'], // Accesible para todos
+    },
   ];
+
+  // Filtrar items del menú según el rol del usuario
+  const visibleMenuItems = menuItems.filter(item => 
+    item.allowedRoles.includes(user?.role || 'user')
+  );
 
   // Función de logout optimizada
   const handleLogout = async () => {
-    if (isLoggingOut) return; // Prevenir múltiples clicks
+    if (isLoggingOut) return;
     
     setIsLoggingOut(true);
-
-    // Redirigir inmediatamente (navegación optimista)
     router.push('/auth/login');
 
-    // Ejecutar logout en segundo plano
     try {
       await authClient.signOut();
     } catch (error) {
       console.error('Error al cerrar sesión:', error);
-      // Si falla, podrías revertir la navegación o mostrar error
-      // pero el usuario ya está en la página de login
     } finally {
       setIsLoggingOut(false);
     }
@@ -96,7 +109,7 @@ export default function Sidebar() {
 
         {/* Navegación */}
         <nav className='space-y-2'>
-          {menuItems.map((item) => (
+          {visibleMenuItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}

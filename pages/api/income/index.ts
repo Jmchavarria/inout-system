@@ -200,7 +200,7 @@ export default async function handler(
     });
 
     const session = await auth.api.getSession({ headers });
-    
+
     if (!session?.user) {
       console.log('❌ [API /income] No session found');
       res.status(401).json({ error: 'unauthorized' });
@@ -223,8 +223,9 @@ export default async function handler(
 
 
 
+
     // ✅ PERMITE ACCESO A ADMIN Y USER
-    await requireRole(req, ['admin']);
+    await requireRole(req, ['admin', 'user']);
     console.log('✅ [API /income] Role check passed');
 
     const delegate = getIncomeDelegate();

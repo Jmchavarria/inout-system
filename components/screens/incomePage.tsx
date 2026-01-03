@@ -11,7 +11,10 @@ import { normalizeIncome } from '../income/mappers/income.mapper';
 export default function IncomeAndExpenses() {
   const { user } = useAuth();
   const { transactions, isLoading, error, addTransaction } = useTransactions();
-  
+
+  console.log('VAMOS A VER', user?.role)
+
+
   const isAdmin = user?.role === 'admin';
 
   const columns = useMemo(() => [
@@ -60,7 +63,7 @@ export default function IncomeAndExpenses() {
   ), [transactions]);
 
   // Estado de carga: esperando usuario
-  if (!user) {  
+  if (!user) {
     return (
       <div className="p-6 flex items-center justify-center h-full">
         <p className="text-gray-500">Verificando permisos...</p>
