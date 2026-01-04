@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuth } from '@/context/auth-context';
 
 interface Feature {
   title: string;
@@ -21,22 +22,8 @@ interface Feature {
 }
 
 const Home = () => {
-  const [role, setRole] = useState<string | null>(null);
+  const {user} = useAuth()
   
-
-  useEffect(() => {
-    const fetchRole = async () => {
-      try {
-        const res = await fetch('/api/me');
-        const data = await res.json();
-        setRole(data.role);
-      } catch (err) {
-        console.error('Error fetching role:', err);
-      }
-    };
-
-    fetchRole();
-  }, []);
 
   const features: Feature[] = useMemo(() => [
     {
@@ -99,7 +86,7 @@ const Home = () => {
       <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {features.map((f, index) => {
-            const isRestricted = f.restricted && role === 'user';
+            const isRestricted = f.restricted && user?.role === 'user';
             const isFirstImage = index === 0; // 👈 LCP
 
             return (
@@ -139,7 +126,7 @@ const Home = () => {
                       <Lock className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
                       <p className="font-medium text-sm sm:text-base text-center">
                         Restricted for your role
-                      </p>
+                      </p>ñ
                     </div>
                   </>
                 ) : (
