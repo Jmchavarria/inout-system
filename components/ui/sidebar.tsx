@@ -70,7 +70,7 @@ export default function Sidebar() {
     <div className='flex h-screen'>
       {/* Botón móvil */}
       <button
-        onClick={() => setIsMobileOpen(!isMobileOpen)}
+        onClick={() => setIsMobileOpen(!isMobileOpen)} title='Menu'
         className='md:hidden fixed top-4 left-4 z-50 p-2 rounded-md bg-gray-200'
       >
         {isMobileOpen ? <X size={20} /> : <Menu size={20} />}
