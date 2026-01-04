@@ -1,39 +1,36 @@
+generator client {
+  provider = "prisma-client-js"
+}
 
-  generator client {
-    provider = "prisma-client-js"
-  }
+datasource db {
+  provider = "postgresql"
+}
 
-  datasource db {
-    provider  = "postgresql"
-    url       = env("DATABASE_URL")
-    directUrl = env("DIRECT_URL")
-  }
+model User {
+  id            String        @id @default(cuid())
+  email         String?       @unique
+  name          String?
+  image         String?
+  role          String        @default("admin")
+  tel           String?
+  createdAt     DateTime      @default(now()) @map("created_at")
+  emailVerified Boolean       @default(false) @map("email_verified")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  accounts      Account[]
+  sessions      Session[]
+  transactions  Transaction[]
 
-  model User {
-    id            String        @id @default(cuid())
-    email         String?       @unique
-    name          String?
-    image         String?
-    role          String        @default("admin")
-    tel           String?
-    createdAt     DateTime      @default(now()) @map("created_at")
-    emailVerified Boolean       @default(false) @map("email_verified")
-    updatedAt     DateTime      @updatedAt @map("updated_at")
-    accounts      Account[]
-    sessions      Session[]
-    transactions  Transaction[]
-
-    @@map("users")
-  }
+  @@map("users")
+}
 
 model Account {
-  id        String   @id @default(cuid())
+  id String @id @default(cuid())
 
-  userId    String   @map("user_id")
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId String @map("user_id")
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  providerId String  @map("provider_id")
-  accountId  String  @map("account_id")
+  providerId String @map("provider_id")
+  accountId  String @map("account_id")
 
   accessToken           String?   @map("access_token")
   refreshToken          String?   @map("refresh_token")
@@ -45,50 +42,50 @@ model Account {
   refreshTokenExpiresAt DateTime? @map("refresh_token_expires_at")
 
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt      @map("updated_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@unique([providerId, accountId])
   @@map("accounts")
 }
 
+model Session {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now()) @map("created_at")
+  expiresAt DateTime @map("expires_at")
+  token     String   @unique
+  updatedAt DateTime @updatedAt @map("updated_at")
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  ipAddress String?
+  userAgent String?
 
-  model Session {
-    id        String   @id @default(cuid())
-    createdAt DateTime @default(now()) @map("created_at")
-    expiresAt DateTime @map("expires_at")
-    token     String   @unique
-    updatedAt DateTime @updatedAt @map("updated_at")
-    userId    String   @map("user_id")
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@map("sessions")
+}
 
-    ipAddress String?
-    userAgent String?
+model Verification {
+  id         String   @id @default(cuid())
+  identifier String
+  value      String
+  expiresAt  DateTime @map("expires_at")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
 
-    @@map("sessions")
-  }
+  @@unique([identifier, value])
+  @@map("verifications")
+}
 
-  model Verification {
-    id         String   @id @default(cuid())
-    identifier String
-    value      String
-    expiresAt  DateTime @map("expires_at")
-    createdAt  DateTime @default(now()) @map("created_at")
-    updatedAt  DateTime @updatedAt @map("updated_at")
+// schema.prisma
+model Transaction {
+  id      String   @id @default(cuid())
+  concept String
+  amount  Float
+  date    DateTime @default(now())
+  userId  String
+  user    User     @relation(fields: [userId], references: [id])
 
-    @@unique([identifier, value])
-    @@map("verifications")
-  }
-
-  model Transaction {
-    id        String   @id @default(cuid())
-    concept   String
-    amount    Decimal
-    date      DateTime
-    createdAt DateTime @default(now()) @map("created_at")
-    updatedAt DateTime @updatedAt @map("updated_at")
-    userId    String   @map("user_id")
-    user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-    @@map("transactions")
-  }
+  // ✅ CRÍTICO: Agregar índices
+  @@index([date(sort: Desc)]) // Para orderBy optimizado
+  @@index([userId]) // Para filtros por usuario
+  @@index([userId, date(sort: Desc)]) // Índice compuesto si filtras por user
+}

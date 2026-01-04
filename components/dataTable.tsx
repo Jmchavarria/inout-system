@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronUp, ChevronDown, ChevronsUpDown, Plus, SquarePen } from 'lucide-react';
+import { ChevronUp, ChevronDown, ChevronsUpDown, Plus, SquarePen } from 'lucide-react';
 import { IncomeExpenseForm } from './income/components/IncomeExpenseForm';
 import { UserForm } from './users/components/usersForm';
+import { SearchBar } from './searchBar';
+import { Pagination } from './pagination';
 
 // Types
 type SortDirection = 'asc' | 'desc';
@@ -130,19 +132,14 @@ export const DataTable: React.FC<DataTableProps> = ({
             </div>
 
             {/* Buscador */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-              <input
-                type="text"
-                placeholder="Buscar en todos los campos..."
-                value={searchTerm}
-                onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                  setSearchTerm(e.target.value);
-                  setCurrentPage(1);
-                }}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
-              />
-            </div>
+            <SearchBar
+              value={searchTerm}
+              onChange={(value) => {
+                setSearchTerm(value);
+                setCurrentPage(1);
+              }}
+              placeholder="Buscar en todos los campos..."
+            />
           </div>
 
           {/* Tabla */}
@@ -226,48 +223,13 @@ export const DataTable: React.FC<DataTableProps> = ({
           </div>
 
           {/* Footer con paginación */}
-          {sortedData.length > 0 && (
-            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-              <div className="text-sm text-gray-700">
-                Mostrando <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> a{' '}
-                <span className="font-medium">{Math.min(currentPage * itemsPerPage, sortedData.length)}</span> de{' '}
-                <span className="font-medium">{sortedData.length}</span> resultados
-              </div>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                  disabled={currentPage === 1}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Anterior
-                </button>
-
-                <div className="flex gap-1">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
-                    <button
-                      key={page}
-                      onClick={() => setCurrentPage(page)}
-                      className={`w-10 h-10 text-sm font-medium rounded-lg transition flex items-center justify-center ${currentPage === page
-                        ? 'bg-gray-600 text-white'
-                        : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                        }`}
-                    >
-                      {page}
-                    </button>
-                  ))}
-                </div>
-
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                  disabled={currentPage === totalPages}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
-                >
-                  Siguiente
-                </button>
-              </div>
-            </div>
-          )}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={sortedData.length}
+            itemsPerPage={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
         </div>
       </div>
 
@@ -297,11 +259,7 @@ export const DataTable: React.FC<DataTableProps> = ({
             setSelectedUser(null)
           }}
         />
-
       )}
-
-
-
     </div>
   );
 };

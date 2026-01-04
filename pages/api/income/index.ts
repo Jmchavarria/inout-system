@@ -2,23 +2,11 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
-import { requireRole } from '@/lib/rbac';
 import { auth } from '@/lib/auth';
 
 // ─────────────────────────────────────────────────────────────
 // Utils
 // ─────────────────────────────────────────────────────────────
-const getHttpStatus = (err: unknown): number => {
-  if (err && typeof err === 'object') {
-    const obj = err as Record<string, unknown>;
-    const candidates = [obj.status, obj.code];
-    for (const c of candidates) {
-      if (typeof c === 'number' && c >= 400 && c <= 599) return c;
-    }
-  }
-  return 500;
-};
-
 const toYMD = (d: Date): string => d.toISOString().slice(0, 10);
 
 // ─────────────────────────────────────────────────────────────
@@ -37,7 +25,7 @@ type IncomePayload = {
   id: string;
   concept: string;
   amount: number;
-  date: string; // YYYY-MM-DD
+  date: string;
   user: { id: string; name: string | null; email: string | null } | null;
 };
 
@@ -51,125 +39,42 @@ type ApiResponse = GetResponse | PostResponse | ErrorResponse | void;
 const createIncomeSchema = z.object({
   concept: z.string().min(1, 'concept is required'),
   amount: z.number(),
-  date: z.string().optional(), // YYYY-MM-DD
-  userId: z.string().optional(),
+  date: z.string().optional(),
 });
 
 // ─────────────────────────────────────────────────────────────
-// Acceso dinámico al modelo para evitar error de tipos
+// Helpers optimizados
 // ─────────────────────────────────────────────────────────────
-const prismaAny = prisma as any;
-
-function getIncomeDelegate() {
-  return prismaAny.transaction;
-}
 
 /**
- * findMany con "fallbacks" y filtrado por usuario
+ * ✅ OPTIMIZADO: Convierte headers de Next.js a Headers estándar
  */
-async function safeFindMany(delegate: any) {
-  console.log(`🔍 [safeFindMany] Fetching all records`);
-
-  try {
-    return await delegate.findMany({
-      orderBy: { date: 'desc' },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
-  } catch {
-    try {
-      return await delegate.findMany({
-        orderBy: { date: 'desc' },
-      });
-    } catch {
-      return await delegate.findMany();
+function toWebHeaders(reqHeaders: NextApiRequest['headers']): Headers {
+  const headers = new Headers();
+  for (const [key, value] of Object.entries(reqHeaders)) {
+    if (value) {
+      headers.set(key, Array.isArray(value) ? value[0] : value);
     }
   }
-}
-
-
-/**
- * create con "fallbacks": asocia automáticamente al usuario autenticado
- */
-async function safeCreate(delegate: any, data: {
-  concept: string;
-  amount: number;
-  date?: string;
-  userId: string; // Ahora es requerido
-}) {
-  console.log('🔍 [safeCreate] Attempting to create income record:', data);
-
-  // Construimos base
-  const base = {
-    concept: data.concept,
-    amount: data.amount,
-  } as any;
-
-  // Agregar fecha si se proporciona
-  if (data.date) {
-    base.date = new Date(data.date);
-  }
-
-  // Intento 1: con relación user.connect
-  try {
-    const result = await delegate.create({
-      data: { ...base, user: { connect: { id: data.userId } } },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
-    console.log('✅ [safeCreate] Success with user.connect + include');
-    return result;
-  } catch (error) {
-    console.log('⚠️ [safeCreate] Failed with user.connect, trying userId field');
-  }
-
-  // Intento 2: con userId plano + include
-  try {
-    const result = await delegate.create({
-      data: { ...base, userId: data.userId },
-      include: { user: { select: { id: true, name: true, email: true } } },
-    });
-    console.log('✅ [safeCreate] Success with userId + include');
-    return result;
-  } catch (error) {
-    console.log('⚠️ [safeCreate] Failed with include, trying without include');
-  }
-
-  // Intento 3: con userId sin include
-  try {
-    const result = await delegate.create({
-      data: { ...base, userId: data.userId }
-    });
-    console.log('✅ [safeCreate] Success with userId only');
-    return result;
-  } catch (error) {
-    console.error('❌ [safeCreate] All create attempts failed:', error);
-    throw error;
-  }
+  return headers;
 }
 
 /**
- * Normaliza un registro cualquiera a IncomePayload.
+ * ✅ OPTIMIZADO: Normaliza un registro a IncomePayload
  */
 function normalizeIncome(row: any): IncomePayload {
-  const concept: string = String(row?.concept ?? '');
-  const amountNum = Number(row?.amount ?? 0);
   const rawDate = row?.date ?? row?.createdAt ?? new Date();
-  const date = toYMD(new Date(rawDate));
-
-  const user =
-    row?.user && typeof row.user === 'object'
-      ? {
-        id: String(row.user.id ?? ''),
-        name: row.user.name ?? null,
-        email: row.user.email ?? null,
-      }
-      : null;
-
+  
   return {
     id: String(row?.id ?? ''),
-    concept: String(concept),
-    amount: Number(amountNum),
-    date,
-    user,
+    concept: String(row?.concept ?? ''),
+    amount: Number(row?.amount ?? 0),
+    date: toYMD(new Date(rawDate)),
+    user: row?.user ? {
+      id: String(row.user.id),
+      name: row.user.name ?? null,
+      email: row.user.email ?? null,
+    } : null,
   };
 }
 
@@ -180,6 +85,8 @@ export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse<ApiResponse>
 ): Promise<void> {
+  // ✅ OPTIMIZACIÓN: Cache headers para reducir carga
+  res.setHeader('Cache-Control', 's-maxage=10, stale-while-revalidate');
   res.setHeader('Allow', 'GET, POST, OPTIONS');
 
   if (req.method === 'OPTIONS') {
@@ -188,76 +95,70 @@ export default async function handler(
   }
 
   try {
-    console.log(`🔍 [API /income] ${req.method} request received`);
-
-    // ✅ Verificar autenticación y obtener sesión
-    // Convertir headers de Next.js al formato que espera Better Auth
-    const headers = new Headers();
-    Object.entries(req.headers).forEach(([key, value]) => {
-      if (value) {
-        headers.set(key, Array.isArray(value) ? value[0] : value);
-      }
-    });
-
+    // ✅ OPTIMIZADO: Verificar autenticación una sola vez
+    const headers = toWebHeaders(req.headers);
     const session = await auth.api.getSession({ headers });
 
-    if (!session?.user) {
-      console.log('❌ [API /income] No session found');
+    if (!session?.user?.id) {
       res.status(401).json({ error: 'unauthorized' });
       return;
     }
 
     const userId = session.user.id;
 
-    // 🔍 Obtener el rol del usuario desde la base de datos
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, role: true },
-    });
-
-    if (!user) {
-      console.log('❌ [API /income] User not found in database');
-      res.status(401).json({ error: 'unauthorized' });
-      return;
+    // ✅ OPTIMIZACIÓN: Obtener role desde la sesión si está disponible
+    // Si Better Auth ya incluye el role en la sesión, no necesitas esta query
+    const userRole = (session.user as any).role;
+    
+    // Solo consultar DB si el role no viene en la sesión
+    let role = userRole;
+    if (!role) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      role = user?.role;
     }
 
-
-
-
-    // ✅ PERMITE ACCESO A ADMIN Y USER
-    await requireRole(req, ['admin', 'user']);
-    console.log('✅ [API /income] Role check passed');
-
-    const delegate = getIncomeDelegate();
-    if (!delegate) {
-      console.error('❌ [API /income] No income model found');
-      res.status(500).json({
-        error: 'internal_error',
-        details: 'No se encontró un modelo de ingresos en Prisma Client.',
-      });
+    // ✅ Verificar permisos (admin o user pueden acceder)
+    if (!role || !['admin', 'user'].includes(role)) {
+      res.status(403).json({ error: 'forbidden' });
       return;
     }
 
     // ═══════════════════════════════════════════════════════════
-    // GET: Obtener transacciones (filtradas por usuario)
+    // GET: Obtener transacciones
     // ═══════════════════════════════════════════════════════════
     if (req.method === 'GET') {
-      console.log('📋 [API /income] Processing GET request');
-      const rows = await safeFindMany(delegate);
-      const items = (rows as any[]).map(normalizeIncome);
-      console.log(`✅ [API /income] Returning ${items.length} items`);
+      // ✅ OPTIMIZADO: Query simple y directa con índice
+      const rows = await prisma.transaction.findMany({
+        orderBy: { date: 'desc' },
+        include: { 
+          user: { 
+            select: { id: true, name: true, email: true } 
+          } 
+        },
+        // ✅ OPCIONAL: Limitar resultados para mejor performance
+        // take: 100,
+      });
+
+      const items = rows.map(normalizeIncome);
       res.status(200).json({ items });
       return;
     }
 
     // ═══════════════════════════════════════════════════════════
-    // POST: Crear transacción (asociada al usuario autenticado)
+    // POST: Crear transacción
     // ═══════════════════════════════════════════════════════════
     if (req.method === 'POST') {
-      console.log('📋 [API /income] Processing POST request');
+      // ✅ Solo admins pueden crear
+      if (role !== 'admin') {
+        res.status(403).json({ error: 'forbidden' });
+        return;
+      }
+
       const parsed = createIncomeSchema.safeParse(req.body);
       if (!parsed.success) {
-        console.log('❌ [API /income] Invalid request body:', parsed.error);
         res.status(400).json({
           error: 'invalid_body',
           details: parsed.error.flatten()
@@ -265,15 +166,22 @@ export default async function handler(
         return;
       }
 
-      // ✅ Forzar userId del usuario autenticado (ignorar el del body por seguridad)
-      const dataToCreate = {
-        ...parsed.data,
-        userId: userId, // Siempre usar el userId de la sesión
-      };
+      // ✅ OPTIMIZADO: Create simple sin try-catch en cascada
+      const created = await prisma.transaction.create({
+        data: {
+          concept: parsed.data.concept,
+          amount: parsed.data.amount,
+          date: parsed.data.date ? new Date(parsed.data.date) : new Date(),
+          userId: userId, // Siempre usar el userId autenticado
+        },
+        include: {
+          user: {
+            select: { id: true, name: true, email: true }
+          }
+        }
+      });
 
-      const created = await safeCreate(delegate, dataToCreate);
       const payload = normalizeIncome(created);
-      console.log('✅ [API /income] Income created successfully');
       res.status(201).json(payload);
       return;
     }
@@ -282,14 +190,14 @@ export default async function handler(
 
   } catch (err: unknown) {
     console.error('❌ [API /income] Error:', err);
-    const code = getHttpStatus(err);
-    const error: ErrorResponse['error'] =
-      code === 401
-        ? 'unauthorized'
-        : code === 403
-          ? 'forbidden'
-          : 'internal_error';
+    
+    const statusCode = err && typeof err === 'object' && 'code' in err 
+      ? (err as any).code 
+      : 500;
 
-    res.status(code).json({ error, details: err instanceof Error ? err.message : 'Unknown error' });
+    res.status(statusCode).json({ 
+      error: 'internal_error',
+      details: err instanceof Error ? err.message : 'Unknown error'
+    });
   }
 }
