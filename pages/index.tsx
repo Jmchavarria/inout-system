@@ -19,7 +19,6 @@ interface Feature {
   image: string;
   alt: string;
 }
-<title>prueba</title>
 
 const Home = () => {
   const [role, setRole] = useState<string | null>(null);
