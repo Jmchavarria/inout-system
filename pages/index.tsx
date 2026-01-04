@@ -44,7 +44,7 @@ const Home = () => {
       iconType: 'dollar',
       route: '/income',
       restricted: false,
-      image: '/images/features/incomeAndExpenses.webp',
+      image: '/images/features/incomeAndExpenses.avif',
       alt: 'Financial management system',
     },
     {
@@ -53,7 +53,7 @@ const Home = () => {
       iconType: 'users',
       route: '/users',
       restricted: true,
-      image: '/images/features/users.png',
+      image: '/images/features/users.avif',
       alt: 'User and permission management',
     },
     {
@@ -62,7 +62,7 @@ const Home = () => {
       iconType: 'chart',
       route: '/reports',
       restricted: true,
-      image: '/images/features/reports.jpeg',
+      image: '/images/features/reports.avif',
       alt: 'Reports and analytics',
     },
   ], []);
@@ -70,21 +70,36 @@ const Home = () => {
   const getIcon = useCallback((iconType: Feature['iconType']) => {
     switch (iconType) {
       case 'dollar':
-        return <CircleDollarSign className='w-6 h-6 sm:w-7 sm:h-7 text-emerald-600' aria-hidden='true' />;
+        return (
+          <CircleDollarSign
+            className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600"
+            aria-hidden="true"
+          />
+        );
       case 'users':
-        return <Users2 className='w-6 h-6 sm:w-7 sm:h-7 text-blue-600' aria-hidden='true' />;
+        return (
+          <Users2
+            className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600"
+            aria-hidden="true"
+          />
+        );
       case 'chart':
-        return <BarChart3 className='w-6 h-6 sm:w-7 sm:h-7 text-purple-600' aria-hidden='true' />;
+        return (
+          <BarChart3
+            className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600"
+            aria-hidden="true"
+          />
+        );
     }
   }, []);
 
   return (
     <div className="flex items-center justify-center min-h-[calc(100vh-80px)] py-6 sm:py-8 md:py-12">
       <div className="w-full max-w-7xl px-4 sm:px-6 lg:px-8">
-        {/* Grid responsive: 1 columna en móvil, 3 columnas en desktop */}
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-          {features.map((f) => {
+          {features.map((f, index) => {
             const isRestricted = f.restricted && role === 'user';
+            const isFirstImage = index === 0; // 👈 LCP
 
             return (
               <div
@@ -93,14 +108,17 @@ const Home = () => {
               >
                 {isRestricted ? (
                   <>
+                    {/* Imagen NO LCP → lazy */}
                     <div className="relative h-40 sm:h-48 w-full overflow-hidden">
                       <Image
                         alt={f.alt}
                         src={f.image}
                         width={400}
                         height={300}
-                        className='object-cover w-full h-full'
-                        quality={90}
+                        className="object-cover w-full h-full"
+                        quality={85}
+                        loading="lazy"
+                        sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     </div>
 
@@ -131,8 +149,15 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        className='object-cover w-full h-full transition-transform duration-300 group-hover:scale-110'
+                        className={`object-cover w-full h-full ${
+                          !isFirstImage
+                            ? 'transition-transform duration-300 group-hover:scale-110'
+                            : ''
+                        }`}
                         quality={90}
+                        priority={isFirstImage} // ✅ SOLO LCP
+                        loading={!isFirstImage ? 'lazy' : undefined}
+                        sizes="(max-width: 768px) 100vw, 33vw"
                       />
                     </div>
 
