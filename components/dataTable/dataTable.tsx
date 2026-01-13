@@ -1,7 +1,8 @@
 // components/dataTable/DataTable.tsx
 'use client';
 
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useDeferredValue } from 'react';
+import dynamic from 'next/dynamic';
 import { ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import { SearchBar } from '../searchBar';
 import { Pagination } from '../pagination';
@@ -10,9 +11,16 @@ import { TableBody } from '../TableBody';
 import { UseDataTable } from '@/context/dataTableContext';
 import type { ModalController, ModalType } from '@/components/dataTable/types';
 
-// Importa tus forms reales
-import { IncomeExpenseForm } from '../income';
-import { UserForm } from '../users/components/usersForm';
+// ✅ Cargar forms SOLO cuando se necesiten (reduce unused JS)
+const IncomeExpenseForm = dynamic(
+  () => import('../income').then((m) => m.IncomeExpenseForm),
+  { ssr: false, loading: () => null }
+);
+
+const UserForm = dynamic(
+  () => import('../users/components/usersForm').then((m) => m.UserForm),
+  { ssr: false, loading: () => null }
+);
 
 type SortDirection = 'asc' | 'desc';
 
@@ -31,6 +39,8 @@ interface DataTableProps {
 
 export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const deferredSearch = useDeferredValue(searchTerm);
+
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
   const [currentPage, setCurrentPage] = useState<number>(1);
 
@@ -40,38 +50,46 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
   const [selectedUser, setSelectedUser] = useState<any | null>(null);
 
   const { title, columns, actions, data, addLabel } = UseDataTable();
-
   const itemsPerPage = 5;
 
-  const modal: ModalController = {
-    isOpen: isModalOpen,
-    type: modalType,
-    selected: selectedUser,
-    open: (type, selected = null) => {
-      setModalType(type);
-      setSelectedUser(selected);
-      setIsModalOpen(true);
-    },
-    close: () => {
-      setIsModalOpen(false);
-      setModalType(null);
-      setSelectedUser(null);
-    },
-  };
+  const modal: ModalController = useMemo(
+    () => ({
+      isOpen: isModalOpen,
+      type: modalType,
+      selected: selectedUser,
+      open: (type: ModalType, selected: any | null = null) => {
+        setModalType(type);
+        setSelectedUser(selected);
+        setIsModalOpen(true);
+      },
+      close: () => {
+        setIsModalOpen(false);
+        setModalType(null);
+        setSelectedUser(null);
+      },
+    }),
+    [isModalOpen, modalType, selectedUser],
+  );
 
-  const handleTransactionSubmit = async (payload: any) => {
-    if (fetchExecuted) await fetchExecuted(payload);
-  };
+  const handleTransactionSubmit = useCallback(
+    async (payload: any) => {
+      if (fetchExecuted) await fetchExecuted(payload);
+    },
+    [fetchExecuted],
+  );
 
-  // Filtrado
+  // ✅ Filtrado más amigable con rendimiento (usa deferredSearch)
   const filteredData = useMemo(() => {
     if (!data) return [];
+    const q = deferredSearch.trim().toLowerCase();
+    if (!q) return data;
+
     return data.filter((item: any) =>
       Object.values(item).some((value) =>
-        value?.toString().toLowerCase().includes(searchTerm.toLowerCase()),
+        String(value ?? '').toLowerCase().includes(q),
       ),
     );
-  }, [data, searchTerm]);
+  }, [data, deferredSearch]);
 
   // Ordenamiento
   const sortedData = useMemo(() => {
@@ -89,17 +107,21 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
 
   const totalPages = Math.ceil(sortedData.length / itemsPerPage);
 
-  const paginatedData = sortedData.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage,
+  const paginatedData = useMemo(
+    () =>
+      sortedData.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage,
+      ),
+    [sortedData, currentPage],
   );
 
-  const handleSort = (key: string) => {
+  const handleSort = useCallback((key: string) => {
     setSortConfig((prev) => ({
       key,
       direction: prev.key === key && prev.direction === 'asc' ? 'desc' : 'asc',
     }));
-  };
+  }, []);
 
   const SortIcon: React.FC<SortIconProps> = ({ column }) => {
     if (sortConfig.key !== column) return <ChevronsUpDown className="w-4 h-4 ml-1" />;
@@ -110,22 +132,18 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
     );
   };
 
+  const handleAdd = useCallback(() => {
+    const type: ModalType = title.toLowerCase().includes('income') ? 'income' : 'user';
+    modal.open(type, null);
+  }, [title, modal]);
+
   return (
     <div className="from-slate-50 to-slate-100">
       <div className="max-w-6xl mx-auto">
         <div className="bg-white rounded-xl shadow-lg overflow-hidden">
           {/* Header */}
           <div className="p-6 border-b border-gray-200">
-            <TableHeader
-              title={title}
-              addLabel={addLabel}
-              onAdd={() => {
-                const type = title.toLowerCase().includes('income') ? 'income' : 'user';
-                setModalType(type);
-                setSelectedUser(null);
-                setIsModalOpen(true);
-              }}
-            />  
+            <TableHeader title={title} addLabel={addLabel} onAdd={handleAdd} />
 
             <SearchBar
               value={searchTerm}
@@ -156,7 +174,6 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
                     </th>
                   ))}
 
-                  {/* Columna acciones */}
                   {actions && (
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Actions
@@ -179,12 +196,12 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
         </div>
       </div>
 
-      {/* ✅ Modales SIEMPRE fuera del table */}
+      {/* ✅ Modales SOLO si se usan, y forms se cargan en demanda */}
       {modal.type === 'income' && (
         <IncomeExpenseForm
           isOpen={modal.isOpen}
           onClose={modal.close}
-          onSubmit={async (formData) => {
+          onSubmit={async (formData: any) => {
             await handleTransactionSubmit(formData);
             modal.close();
           }}
@@ -196,20 +213,11 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
           isOpen={modal.isOpen}
           onClose={modal.close}
           initialData={modal.selected}
-          onSubmit={async (formData) => {
-            // editar
+          onSubmit={async (formData: any) => {
             if (modal.selected && fetchExecuted) {
-              await fetchExecuted({
-                id: modal.selected.id,
-                ...formData,
-              });
+              await fetchExecuted({ id: modal.selected.id, ...formData });
               modal.close();
-              return;
             }
-
-            // crear (si luego implementas create)
-            // if (fetchExecuted) await fetchExecuted(formData);
-            // modal.close();
           }}
         />
       )}
