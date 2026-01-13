@@ -10,68 +10,71 @@ import { normalizeIncome } from '../income/mappers/income.mapper';
 import { UseDataTable } from '@/context/dataTableContext';
 
 export default function IncomeAndExpenses() {
-  // ✅ Obtener user y role del contexto (ya optimizado)
   const { user, isLoading: userLoading } = useAuth();
   const { transactions, isLoading: transactionsLoading, error, addTransaction } = useTransactions();
-  const { setTitle, setColumns, setActions, setData, setAddLabel } = UseDataTable()
+  const { setTitle, setColumns, setActions, setData, setAddLabel } = UseDataTable();
 
-  const columns = useMemo(() => [
-    { key: 'id', label: 'ID' },
-    { key: 'concept', label: 'Concept' },
-    { key: 'amount', label: 'Amount' },
-    { key: 'date', label: 'Date' },
-    { key: 'user', label: 'User' },
-  ], []);
+  const isAdmin = user?.role === 'admin';
 
-  // ✅ aquí, no en render
+  const columns = useMemo(
+    () => [
+      { key: 'id', label: 'ID' },
+      { key: 'concept', label: 'Concept' },
+      { key: 'amount', label: 'Amount' },
+      { key: 'date', label: 'Date' },
+      { key: 'user', label: 'User' },
+    ],
+    [],
+  );
+
+  const tableData = useMemo(
+    () =>
+      transactions.map((i) => ({
+        id: i.id,
+        concept: i.concept,
+        amount: i.amount,
+        date: new Date(i.date).toLocaleDateString('es-CO', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+        }),
+        user: i.user?.name || i.user?.email || 'Unknown',
+      })),
+    [transactions],
+  );
+
+  // 1) Configuración base (una vez)
   useEffect(() => {
     setTitle('Income and Expenses');
     setColumns(columns);
-    setActions(true)
-    setData(tableData)
-    setAddLabel(isAdmin ? 'New Income/Expense' : null)
   }, [setTitle, setColumns, columns]);
 
-  // ✅ El role ya viene en user desde el contexto optimizado
-  const isAdmin = user?.role === 'admin';
+  // 2) Datos (cada vez que cambien)
+  useEffect(() => {
+    setData(tableData);
+  }, [tableData, setData]);
 
+  // 3) Permisos + botón add
+  useEffect(() => {
+    setActions(!!isAdmin);
+    setAddLabel(isAdmin ? 'New Income/Expense' : null);
+  }, [isAdmin, setActions, setAddLabel]);
 
+  const handleTransactionSubmit = useCallback(
+    async (data: any): Promise<void> => {
+      if (!isAdmin) throw new Error('No tienes permiso para crear transacciones');
 
-  const handleTransactionSubmit = useCallback(async (data: any): Promise<void> => {
-    if (!isAdmin) {
-      throw new Error('No tienes permiso para crear transacciones');
-    }
-
-    try {
       const created = await incomeService.create({
         concept: data.concept.trim(),
         amount: Number(data.amount),
         date: data.date,
       });
 
-      const normalized = normalizeIncome(created);
-      addTransaction(normalized);
-    } catch (error) {
-      console.error('Error creating transaction:', error);
-      throw error;
-    }
-  }, [isAdmin, addTransaction]);
+      addTransaction(normalizeIncome(created));
+    },
+    [isAdmin, addTransaction],
+  );
 
-  const tableData = useMemo(() => (
-    transactions.map(i => ({
-      id: i.id,
-      concept: i.concept,
-      amount: i.amount,
-      date: new Date(i.date).toLocaleDateString('es-CO', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-      }),
-      user: i.user.name || i.user.email || 'Unknown',
-    }))
-  ), [transactions]);
-
-  // ✅ Loading unificado
   const isLoading = userLoading || transactionsLoading;
 
   if (isLoading) {
@@ -111,9 +114,7 @@ export default function IncomeAndExpenses() {
 
   return (
     <div className="h-full px-6">
-      <DataTable
-        fetchExecuted={handleTransactionSubmit}
-      />
+      <DataTable fetchExecuted={handleTransactionSubmit} />
     </div>
   );
 }
