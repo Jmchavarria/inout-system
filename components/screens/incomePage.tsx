@@ -1,21 +1,19 @@
 'use client';
 
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useEffect } from 'react';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { DataTable } from '../dataTable';
+import { DataTable } from '../dataTable/dataTable';
 import { useAuth } from '@/context/auth-context';
 import { useTransactions } from '@/context/transaction-context';
 import { incomeService } from '../income/services/income.service';
 import { normalizeIncome } from '../income/mappers/income.mapper';
+import { UseDataTable } from '@/context/dataTableContext';
 
 export default function IncomeAndExpenses() {
   // ✅ Obtener user y role del contexto (ya optimizado)
   const { user, isLoading: userLoading } = useAuth();
   const { transactions, isLoading: transactionsLoading, error, addTransaction } = useTransactions();
-  
-
-  // ✅ El role ya viene en user desde el contexto optimizado
-  const isAdmin = user?.role === 'admin';
+  const { setTitle, setColumns, setActions, setData, setAddLabel } = UseDataTable()
 
   const columns = useMemo(() => [
     { key: 'id', label: 'ID' },
@@ -24,6 +22,20 @@ export default function IncomeAndExpenses() {
     { key: 'date', label: 'Date' },
     { key: 'user', label: 'User' },
   ], []);
+
+  // ✅ aquí, no en render
+  useEffect(() => {
+    setTitle('Income and Expenses');
+    setColumns(columns);
+    setActions(true)
+    setData(tableData)
+    setAddLabel(isAdmin ? 'New Income/Expense' : null)
+  }, [setTitle, setColumns, columns]);
+
+  // ✅ El role ya viene en user desde el contexto optimizado
+  const isAdmin = user?.role === 'admin';
+
+
 
   const handleTransactionSubmit = useCallback(async (data: any): Promise<void> => {
     if (!isAdmin) {
@@ -100,11 +112,6 @@ export default function IncomeAndExpenses() {
   return (
     <div className="h-full px-6">
       <DataTable
-        title="Income and Expenses"
-        columns={columns}
-        data={tableData}
-        addLabel={isAdmin ? 'New Income/Expense' : null}
-        actions={false}
         fetchExecuted={handleTransactionSubmit}
       />
     </div>

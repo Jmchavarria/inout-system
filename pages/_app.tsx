@@ -9,6 +9,7 @@ import { AuthProvider, useAuth } from '../context/auth-context';
 import { TransactionsProvider } from '@/context/transaction-context';
 import '@/styles/globals.css';
 import { Avatar } from '@/features/profile/components/profileAvatar';
+import { DataTableProvider } from '@/context/dataTableContext';
 
 type NextPageWithLayout = NextPage & {
   getLayout?: (page: ReactElement) => ReactNode;
@@ -20,7 +21,7 @@ type AppPropsWithLayout = AppProps & {
 
 const AppLayout = ({ page }: { page: ReactElement }) => {
   const { user } = useAuth();
-  
+
   return (
     <div className='flex h-screen'>
       <Sidebar />
@@ -56,21 +57,23 @@ const MyApp = ({ Component, pageProps }: AppPropsWithLayout) => {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <meta charSet="utf-8" />
         <link rel="icon" href="/favicon.ico" />
-        
+
         {/* Open Graph / Facebook */}
         <meta property="og:type" content="website" />
         <meta property="og:title" content="Income & Expense Management System" />
         <meta property="og:description" content="Manage your finances efficiently" />
-        
+
         {/* Twitter */}
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Income & Expense Management System" />
         <meta name="twitter:description" content="Manage your finances efficiently" />
       </Head>
-      
+
       <AuthProvider>
         <TransactionsProvider>
-          {getLayout(<Component {...pageProps} />)}
+          <DataTableProvider >
+            {getLayout(<Component {...pageProps} />)}
+          </DataTableProvider>
         </TransactionsProvider>
       </AuthProvider>
     </>

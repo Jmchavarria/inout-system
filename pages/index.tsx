@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useMemo, useCallback } from 'react';
 import {
   BarChart3,
   Users2,
@@ -22,9 +22,8 @@ interface Feature {
 }
 
 const Home = () => {
-  const {user} = useAuth()
+  const { user } = useAuth()
   
-
   const features: Feature[] = useMemo(() => [
     {
       title: 'Income & Expense Management System',
@@ -137,11 +136,10 @@ const Home = () => {
                         src={f.image}
                         width={400}
                         height={300}
-                        className={`object-cover w-full h-full ${
-                          !isFirstImage
-                            ? 'transition-transform duration-300 group-hover:scale-110'
-                            : ''
-                        }`}
+                        className={`object-cover w-full h-full ${!isFirstImage
+                          ? 'transition-transform duration-300 group-hover:scale-110'
+                          : ''
+                          }`}
                         quality={90}
                         priority={isFirstImage} // ✅ SOLO LCP
                         loading={!isFirstImage ? 'lazy' : undefined}
