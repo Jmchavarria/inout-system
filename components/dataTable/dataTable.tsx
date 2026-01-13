@@ -120,11 +120,12 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
               title={title}
               addLabel={addLabel}
               onAdd={() => {
-                // Si quieres que dependa del módulo:
-                // modal.open(title === 'users' ? 'user' : 'income', null)
-                modal.open('user', null);
+                const type = title.toLowerCase().includes('income') ? 'income' : 'user';
+                setModalType(type);
+                setSelectedUser(null);
+                setIsModalOpen(true);
               }}
-            />
+            />  
 
             <SearchBar
               value={searchTerm}
@@ -145,9 +146,8 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
                     <th
                       key={index}
                       onClick={() => col.sortable !== false && handleSort(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
-                        col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                      } transition`}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                        } transition`}
                     >
                       <div className="flex items-center">
                         {col.label}

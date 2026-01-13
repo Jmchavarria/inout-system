@@ -47,7 +47,7 @@ export default function IncomeAndExpenses() {
   useEffect(() => {
     setTitle('Income and Expenses');
     setColumns(columns);
-  }, [setTitle, setColumns, columns]);
+  }, [setTitle, setColumns, columns, setActions]);
 
   // 2) Datos (cada vez que cambien)
   useEffect(() => {
@@ -56,7 +56,7 @@ export default function IncomeAndExpenses() {
 
   // 3) Permisos + botón add
   useEffect(() => {
-    setActions(!!isAdmin);
+    setActions(false);
     setAddLabel(isAdmin ? 'New Income/Expense' : null);
   }, [isAdmin, setActions, setAddLabel]);
 
