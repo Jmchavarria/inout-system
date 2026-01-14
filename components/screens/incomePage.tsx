@@ -27,9 +27,10 @@ export default function IncomeAndExpenses() {
     [],
   );
 
-  const tableData = useMemo(
-    () =>
-      transactions.map((i) => ({
+  // ✅ Datos listos para tabla + `_search` precomputado (para filtro rápido)
+  const tableData = useMemo(() => {
+    return transactions.map((i) => {
+      const row = {
         id: i.id,
         concept: i.concept,
         amount: i.amount,
@@ -39,22 +40,27 @@ export default function IncomeAndExpenses() {
           day: 'numeric',
         }),
         user: i.user?.name || i.user?.email || 'Unknown',
-      })),
-    [transactions],
-  );
+      };
 
-  // 1) Configuración base (una vez)
+      return {
+        ...row,
+        _search: `${row.id} ${row.concept} ${row.amount} ${row.date} ${row.user}`.toLowerCase(),
+      };
+    });
+  }, [transactions]);
+
+  // 1) Configuración base
   useEffect(() => {
     setTitle('Income and Expenses');
     setColumns(columns);
-  }, [setTitle, setColumns, columns, setActions]);
+  }, [setTitle, setColumns, columns]);
 
-  // 2) Datos (cada vez que cambien)
+  // 2) Datos
   useEffect(() => {
     setData(tableData);
   }, [tableData, setData]);
 
-  // 3) Permisos + botón add
+  // 3) Permisos + botón add (en Income no quieres columna actions)
   useEffect(() => {
     setActions(false);
     setAddLabel(isAdmin ? 'New Income/Expense' : null);

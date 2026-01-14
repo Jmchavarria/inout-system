@@ -14,12 +14,12 @@ import type { ModalController, ModalType } from '@/components/dataTable/types';
 // ✅ Cargar forms SOLO cuando se necesiten (reduce unused JS)
 const IncomeExpenseForm = dynamic(
   () => import('../income').then((m) => m.IncomeExpenseForm),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => null },
 );
 
 const UserForm = dynamic(
   () => import('../users/components/usersForm').then((m) => m.UserForm),
-  { ssr: false, loading: () => null }
+  { ssr: false, loading: () => null },
 );
 
 type SortDirection = 'asc' | 'desc';
@@ -35,6 +35,22 @@ interface SortIconProps {
 
 interface DataTableProps {
   fetchExecuted?: (data: any) => Promise<void>;
+}
+
+/**
+ * Si el row trae `_search` (string), filtramos por eso (MUCHO más rápido).
+ * Si no, hacemos fallback a Object.values (por compatibilidad).
+ */
+function matchesSearch(item: any, q: string) {
+  if (!q) return true;
+
+  const pre = item?._search;
+  if (typeof pre === 'string') {
+    return pre.includes(q);
+  }
+
+  // fallback (más lento)
+  return Object.values(item).some((value) => String(value ?? '').toLowerCase().includes(q));
 }
 
 export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
@@ -71,50 +87,64 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
     [isModalOpen, modalType, selectedUser],
   );
 
-  const handleTransactionSubmit = useCallback(
+  const handleSubmit = useCallback(
     async (payload: any) => {
       if (fetchExecuted) await fetchExecuted(payload);
     },
     [fetchExecuted],
   );
 
-  // ✅ Filtrado más amigable con rendimiento (usa deferredSearch)
+  // ✅ Filtrado: usa deferredSearch + _search si existe
   const filteredData = useMemo(() => {
     if (!data) return [];
     const q = deferredSearch.trim().toLowerCase();
     if (!q) return data;
 
-    return data.filter((item: any) =>
-      Object.values(item).some((value) =>
-        String(value ?? '').toLowerCase().includes(q),
-      ),
-    );
+    return data.filter((item: any) => matchesSearch(item, q));
   }, [data, deferredSearch]);
 
-  // Ordenamiento
+  // ✅ Ordenamiento (seguro)
   const sortedData = useMemo(() => {
     if (!sortConfig.key) return filteredData;
 
-    return [...filteredData].sort((a: any, b: any) => {
-      const aVal = a[sortConfig.key as string];
-      const bVal = b[sortConfig.key as string];
+    const key = sortConfig.key;
+    const dir = sortConfig.direction;
 
-      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
-      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+    return [...filteredData].sort((a: any, b: any) => {
+      const aVal = a?.[key];
+      const bVal = b?.[key];
+
+      // Manejo de undefined/null
+      if (aVal == null && bVal == null) return 0;
+      if (aVal == null) return dir === 'asc' ? -1 : 1;
+      if (bVal == null) return dir === 'asc' ? 1 : -1;
+
+      // Si son números, compara números
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return dir === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      // Comparación string
+      const as = String(aVal).toLowerCase();
+      const bs = String(bVal).toLowerCase();
+
+      if (as < bs) return dir === 'asc' ? -1 : 1;
+      if (as > bs) return dir === 'asc' ? 1 : -1;
       return 0;
     });
   }, [filteredData, sortConfig]);
 
-  const totalPages = Math.ceil(sortedData.length / itemsPerPage);
+  const totalPages = Math.max(1, Math.ceil(sortedData.length / itemsPerPage));
 
-  const paginatedData = useMemo(
-    () =>
-      sortedData.slice(
-        (currentPage - 1) * itemsPerPage,
-        currentPage * itemsPerPage,
-      ),
-    [sortedData, currentPage],
-  );
+  // ✅ Si cambias search y te quedas en página alta, te puede dejar vacío
+  // Esto fuerza a ajustar página si se sale del rango
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+
+  const paginatedData = useMemo(() => {
+    const start = (safeCurrentPage - 1) * itemsPerPage;
+    const end = safeCurrentPage * itemsPerPage;
+    return sortedData.slice(start, end);
+  }, [sortedData, safeCurrentPage]);
 
   const handleSort = useCallback((key: string) => {
     setSortConfig((prev) => ({
@@ -164,8 +194,9 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
                     <th
                       key={index}
                       onClick={() => col.sortable !== false && handleSort(col.key)}
-                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
-                        } transition`}
+                      className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ${
+                        col.sortable !== false ? 'cursor-pointer hover:bg-gray-100' : ''
+                      } transition`}
                     >
                       <div className="flex items-center">
                         {col.label}
@@ -187,7 +218,7 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
           </div>
 
           <Pagination
-            currentPage={currentPage}
+            currentPage={safeCurrentPage}
             totalPages={totalPages}
             totalItems={sortedData.length}
             itemsPerPage={itemsPerPage}
@@ -196,13 +227,13 @@ export const DataTable: React.FC<DataTableProps> = ({ fetchExecuted }) => {
         </div>
       </div>
 
-      {/* ✅ Modales SOLO si se usan, y forms se cargan en demanda */}
+      {/* Modales */}
       {modal.type === 'income' && (
         <IncomeExpenseForm
           isOpen={modal.isOpen}
           onClose={modal.close}
           onSubmit={async (formData: any) => {
-            await handleTransactionSubmit(formData);
+            await handleSubmit(formData);
             modal.close();
           }}
         />
