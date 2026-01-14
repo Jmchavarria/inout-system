@@ -23,7 +23,7 @@ interface Feature {
 
 const Home = () => {
   const { user } = useAuth()
-  
+
   const features: Feature[] = useMemo(() => [
     {
       title: 'Income & Expense Management System',
@@ -97,16 +97,18 @@ const Home = () => {
                   <>
                     {/* Imagen NO LCP → lazy */}
                     <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                      <Image
-                        alt={f.alt}
-                        src={f.image}
-                        width={400}
-                        height={300}
-                        className="object-cover w-full h-full"
-                        quality={85}
-                        loading="lazy"
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
+                      <div className="relative h-40 sm:h-48 w-full overflow-hidden">
+                        <Image
+                          src={f.image}
+                          alt={f.alt}
+                          fill
+                          className="object-cover"
+                          priority={isFirstImage}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          quality={isFirstImage ? 80 : 75}
+                        />
+                      </div>
+
                     </div>
 
                     <div className="p-4 sm:p-6 flex-grow">
@@ -131,20 +133,18 @@ const Home = () => {
                 ) : (
                   <Link href={f.route} className="flex flex-col h-full">
                     <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                      <Image
-                        alt={f.alt}
-                        src={f.image}
-                        width={400}
-                        height={300}
-                        className={`object-cover w-full h-full ${!isFirstImage
-                          ? 'transition-transform duration-300 group-hover:scale-110'
-                          : ''
-                          }`}
-                        quality={90}
-                        priority={isFirstImage} // ✅ SOLO LCP
-                        loading={!isFirstImage ? 'lazy' : undefined}
-                        sizes="(max-width: 768px) 100vw, 33vw"
-                      />
+                      <div className="relative h-40 sm:h-48 w-full overflow-hidden">
+                        <Image
+                          src={f.image}
+                          alt={f.alt}
+                          fill
+                          className="object-cover"
+                          priority={isFirstImage}
+                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          quality={isFirstImage ? 80 : 75}
+                        />
+                      </div>
+
                     </div>
 
                     <div className="p-4 sm:p-6 flex-grow">
