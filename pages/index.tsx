@@ -1,12 +1,7 @@
 'use client';
 
 import { useMemo, useCallback } from 'react';
-import {
-  BarChart3,
-  Users2,
-  CircleDollarSign,
-  Lock
-} from 'lucide-react';
+import { BarChart3, Users2, CircleDollarSign, Lock } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useAuth } from '@/context/auth-context';
@@ -22,61 +17,50 @@ interface Feature {
 }
 
 const Home = () => {
-  const { user } = useAuth()
+  const { user } = useAuth();
 
-  const features: Feature[] = useMemo(() => [
-    {
-      title: 'Income & Expense Management System',
-      desc: 'Record, classify, and reconcile your transactions in seconds. Get a clear view of your cash flow to maintain precise control of all your company\'s financial operations.',
-      iconType: 'dollar',
-      route: '/income',
-      restricted: false,
-      image: '/images/features/incomeAndExpenses.avif',
-      alt: 'Financial management system',
-    },
-    {
-      title: 'User Management',
-      desc: 'Roles, permissions, and activity logs. Fine-grained control for your team with simple auditing.',
-      iconType: 'users',
-      route: '/users',
-      restricted: true,
-      image: '/images/features/users.avif',
-      alt: 'User and permission management',
-    },
-    {
-      title: 'Reports',
-      desc: 'Dashboards and exportable files. Key metrics ready to support decision-making.',
-      iconType: 'chart',
-      route: '/reports',
-      restricted: true,
-      image: '/images/features/reports.avif',
-      alt: 'Reports and analytics',
-    },
-  ], []);
+  const features: Feature[] = useMemo(
+    () => [
+      {
+        title: 'Income & Expense Management System',
+        desc:
+          "Record, classify, and reconcile your transactions in seconds. Get a clear view of your cash flow to maintain precise control of all your company's financial operations.",
+        iconType: 'dollar',
+        route: '/income',
+        restricted: false,
+        image: '/images/features/incomeAndExpenses.avif',
+        alt: 'Financial management system',
+      },
+      {
+        title: 'User Management',
+        desc: 'Roles, permissions, and activity logs. Fine-grained control for your team with simple auditing.',
+        iconType: 'users',
+        route: '/users',
+        restricted: true,
+        image: '/images/features/users.avif',
+        alt: 'User and permission management',
+      },
+      {
+        title: 'Reports',
+        desc: 'Dashboards and exportable files. Key metrics ready to support decision-making.',
+        iconType: 'chart',
+        route: '/reports',
+        restricted: true,
+        image: '/images/features/reports.avif',
+        alt: 'Reports and analytics',
+      },
+    ],
+    [],
+  );
 
   const getIcon = useCallback((iconType: Feature['iconType']) => {
     switch (iconType) {
       case 'dollar':
-        return (
-          <CircleDollarSign
-            className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600"
-            aria-hidden="true"
-          />
-        );
+        return <CircleDollarSign className="w-6 h-6 sm:w-7 sm:h-7 text-emerald-600" aria-hidden="true" />;
       case 'users':
-        return (
-          <Users2
-            className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600"
-            aria-hidden="true"
-          />
-        );
+        return <Users2 className="w-6 h-6 sm:w-7 sm:h-7 text-blue-600" aria-hidden="true" />;
       case 'chart':
-        return (
-          <BarChart3
-            className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600"
-            aria-hidden="true"
-          />
-        );
+        return <BarChart3 className="w-6 h-6 sm:w-7 sm:h-7 text-purple-600" aria-hidden="true" />;
     }
   }, []);
 
@@ -86,7 +70,45 @@ const Home = () => {
         <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
           {features.map((f, index) => {
             const isRestricted = f.restricted && user?.role === 'user';
-            const isFirstImage = index === 0; // 👈 LCP
+            const isFirstCard = index === 0;
+
+            // ✅ Solo pre-carga (priority) si realmente puede ser LCP y NO está tapada por overlay
+            const shouldPrioritize = isFirstCard && !isRestricted;
+
+            const CardInner = (
+              <>
+                {/* Imagen */}
+                <div className="relative h-40 sm:h-48 w-full overflow-hidden">
+                  <Image
+                    src={f.image}
+                    alt={f.alt}
+                    fill
+                    className="object-cover"
+                    priority={shouldPrioritize}
+                    loading={shouldPrioritize ? 'eager' : 'lazy'}
+                    sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                    quality={shouldPrioritize ? 80 : 75}
+                  />
+                </div>
+
+                {/* Contenido */}
+                <div className="p-4 sm:p-6 flex-grow">
+                  <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
+                    {getIcon(f.iconType)}
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-900">{f.title}</h3>
+                  </div>
+                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">{f.desc}</p>
+                </div>
+
+                {/* Overlay si es restricted */}
+                {isRestricted && (
+                  <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-gray-600 px-4">
+                    <Lock className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
+                    <p className="font-medium text-sm sm:text-base text-center">Restricted for your role</p>
+                  </div>
+                )}
+              </>
+            );
 
             return (
               <div
@@ -94,70 +116,10 @@ const Home = () => {
                 className="relative overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow group flex flex-col"
               >
                 {isRestricted ? (
-                  <>
-                    {/* Imagen NO LCP → lazy */}
-                    <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                      <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                        <Image
-                          src={f.image}
-                          alt={f.alt}
-                          fill
-                          className="object-cover"
-                          priority={isFirstImage}
-                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                          quality={isFirstImage ? 80 : 75}
-                        />
-                      </div>
-
-                    </div>
-
-                    <div className="p-4 sm:p-6 flex-grow">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                        {getIcon(f.iconType)}
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                          {f.title}
-                        </h3>
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                        {f.desc}
-                      </p>
-                    </div>
-
-                    <div className="absolute inset-0 bg-white/90 flex flex-col items-center justify-center text-gray-600 px-4">
-                      <Lock className="w-10 h-10 sm:w-12 sm:h-12 mb-2" />
-                      <p className="font-medium text-sm sm:text-base text-center">
-                        Restricted for your role
-                      </p>ñ
-                    </div>
-                  </>
+                  <div className="flex flex-col h-full">{CardInner}</div>
                 ) : (
                   <Link href={f.route} className="flex flex-col h-full">
-                    <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                      <div className="relative h-40 sm:h-48 w-full overflow-hidden">
-                        <Image
-                          src={f.image}
-                          alt={f.alt}
-                          fill
-                          className="object-cover"
-                          priority={isFirstImage}
-                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
-                          quality={isFirstImage ? 80 : 75}
-                        />
-                      </div>
-
-                    </div>
-
-                    <div className="p-4 sm:p-6 flex-grow">
-                      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
-                        {getIcon(f.iconType)}
-                        <h3 className="text-base sm:text-lg font-semibold text-gray-900">
-                          {f.title}
-                        </h3>
-                      </div>
-                      <p className="text-xs sm:text-sm text-gray-600 leading-relaxed">
-                        {f.desc}
-                      </p>
-                    </div>
+                    {CardInner}
                   </Link>
                 )}
               </div>
