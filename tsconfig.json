@@ -30,7 +30,7 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     "pages/api/auth/[...all].ts"
-  ],
+, "components/screens/incomet.sx"  ],
   "exclude": [
     "node_modules"
   ]

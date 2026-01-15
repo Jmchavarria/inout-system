@@ -176,3 +176,4 @@ vercel --prod
 ⭐ **Si este proyecto te resulta útil, ¡no olvides darle una estrella!**
 
 🚀 **¿Listo para gestionar tus finanzas de manera eficiente?**
+
